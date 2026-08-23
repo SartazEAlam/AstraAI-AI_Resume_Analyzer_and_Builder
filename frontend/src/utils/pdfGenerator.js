@@ -20,8 +20,8 @@ const PAGE_HEIGHT = 841.89;
 
 // ── Fixed Page Margins (Never scale these) ──
 const MARGIN_X = 45;
-const MARGIN_TOP = 48;
-const MARGIN_BOTTOM = 55;
+const MARGIN_TOP = 46;
+const MARGIN_BOTTOM = 50;
 const CONTENT_W = PAGE_WIDTH - MARGIN_X * 2;
 
 // ── Color helpers ──
@@ -31,15 +31,6 @@ function hexToRgb(hex) {
   const g = parseInt(h.substring(2, 4), 16) / 255;
   const b = parseInt(h.substring(4, 6), 16) / 255;
   return rgb(r, g, b);
-}
-
-function hexToComponents(hex) {
-  const h = (hex || "#4f46e5").replace("#", "");
-  return {
-    r: parseInt(h.substring(0, 2), 16) / 255,
-    g: parseInt(h.substring(2, 4), 16) / 255,
-    b: parseInt(h.substring(4, 6), 16) / 255,
-  };
 }
 
 // ── Sanitization (Strip hidden control chars, keep ATS safe) ──
@@ -53,7 +44,7 @@ function sanitize(text) {
     .replace(/\u2026/g, "...")                   // Ellipsis
     .replace(/\u2022/g, "-")                     // Bullet -> Dash
     .replace(/[\u00A0\t\r\n]/g, " ")             // Replace tabs, newlines, NBSP with space
-    .replace(/[^\x20-\x7E\xA0-\xFF]/g, "")       // Strip all other control characters (fixes WinAnsi 0x0009 error)
+    .replace(/[^\x20-\x7E\xA0-\xFF]/g, "")       // Strip all other control characters (fixes WinAnsi error)
     .replace(/\s+/g, " ")                        // Collapse multiple spaces
     .trim();
 }
@@ -85,108 +76,107 @@ function normalizeSkills(skills) {
   }
   if (typeof skills === "string") {
     return skills
-      .split(/[,;\n\u2022\u00B7|]+/)
+      .split(/[,;\n•·|]+/)
       .map((s) => s.trim())
       .filter(Boolean);
   }
   return [];
 }
 
-export async function generateResumePDF(data, customization = {}) {
-  console.log("=== PDF Generator Running - Version 2.1.0 ===", { template: customization?.templateId, accentColor: customization?.accentColor });
-  const pdfDoc = await PDFDocument.create();
-  pdfDoc.registerFontkit(fontkit);
+const FONT_MAP = {
+  inter: {
+    regular: "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrj72A.ttf",
+    bold: "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZhrj72A.ttf",
+    italic: "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dthjZ-Ck-8.ttf"
+  },
+  outfit: {
+    regular: "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-FCAp.ttf",
+    bold: "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4deyC4G-FCAp.ttf",
+    italic: "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-FCAp.ttf"
+  },
+  "roboto mono": {
+    regular: "https://fonts.gstatic.com/s/robotomono/v23/L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_3vq_ROW4.ttf",
+    bold: "https://fonts.gstatic.com/s/robotomono/v23/L0xuDF4xlVMF-BfR8bXMIhJHg45mwgGEFl0_7Pq_ROW4.ttf",
+    italic: "https://fonts.gstatic.com/s/robotomono/v23/L0xoDF4xlVMF-BfR8bXMIjhOsXG-qQCZyFC-FKK8S54.ttf"
+  },
+  merriweather: {
+    regular: "https://fonts.gstatic.com/s/merriweather/v30/u-440qyriQwlOrhSvowK_l5-fCZM.ttf",
+    bold: "https://fonts.gstatic.com/s/merriweather/v30/u-4n0qyriQwlOrhSvowK_l52xwNZWMf6.ttf",
+    italic: "https://fonts.gstatic.com/s/merriweather/v30/u-4m0qyriQwlOrhSvowK_l5-eRZOf-I.ttf"
+  }
+};
 
-  let fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  let fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  let fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-
-  const templateId = customization?.templateId || customization?.template || "classic";
-  const accentHex = customization?.accentColor || "#4f46e5";
-  
-  // Base font multiplier from user settings (matches templates: 0.88x / 1.05x / 1.25x)
-  const fontSizeSetting = customization?.fontSize || "default";
-  const userBaseFMult = fontSizeSetting === "small" ? 0.88 : fontSizeSetting === "large" ? 1.25 : 1.05;
-
-  // Premium Color Palette
-  const accentColor = hexToRgb(accentHex);
-  const darkCharcoal = rgb(0.12, 0.16, 0.22);
-  const darkSlate = rgb(0.12, 0.16, 0.23); // #1e293b
-  const mediumColor = rgb(0.3, 0.35, 0.4);
-  const grayColor = rgb(0.45, 0.5, 0.55);
-  const lightGray = rgb(0.85, 0.88, 0.9);
-  const whiteColor = rgb(1, 1, 1);
-  const translucentWhite = rgb(0.9, 0.9, 0.9);
-  const veryLightGray = rgb(0.92, 0.94, 0.95);
-
-
-
-  // ════════════════════════════════════════════
-  // TYPOGRAPHIC AUTO-FITTER
-  // ════════════════════════════════════════════
-  
-  let currentMultiplier = userBaseFMult;
-  
-  // Font Family Mapping
-  const customFont = (customization?.fontFamily || "").toLowerCase();
+async function loadFontFamily(pdfDoc, customFont) {
+  const fontStr = (customFont || "").toLowerCase();
   let baseReg = StandardFonts.Helvetica;
   let baseBld = StandardFonts.HelveticaBold;
   let baseItl = StandardFonts.HelveticaOblique;
 
-  if (customFont.includes("roboto mono") || customFont.includes("monospace") || customFont.includes("consolas")) {
+  if (fontStr.includes("roboto mono") || fontStr.includes("mono") || fontStr.includes("consolas")) {
     baseReg = StandardFonts.Courier;
     baseBld = StandardFonts.CourierBold;
     baseItl = StandardFonts.CourierOblique;
-  } else if (customFont.includes("georgia") || customFont.includes("times") || (customFont.includes("serif") && !customFont.includes("sans-serif"))) {
+  } else if (fontStr.includes("georgia") || fontStr.includes("times") || fontStr.includes("merriweather") || fontStr.includes("serif")) {
     baseReg = StandardFonts.TimesRoman;
     baseBld = StandardFonts.TimesRomanBold;
     baseItl = StandardFonts.TimesRomanItalic;
-  } else {
-    baseReg = StandardFonts.Helvetica;
-    baseBld = StandardFonts.HelveticaBold;
-    baseItl = StandardFonts.HelveticaOblique;
   }
-  
-  const FONT_MAP = {
-    inter: {
-      regular: "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrj72A.ttf",
-      bold: "https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZhrj72A.ttf",
-      italic: "https://fonts.gstatic.com/s/inter/v20/UcCM3FwrK3iLTcvneQg7Ca725JhhKnNqk4j1ebLhAm8SrXTc2dthjZ-Ck-8.ttf"
-    },
-    outfit: {
-      regular: "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-FCAp.ttf",
-      bold: "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4deyC4G-FCAp.ttf",
-      italic: "https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-FCAp.ttf"
-    }
-  };
 
-  const fontId = customFont.includes("outfit") ? "outfit" : customFont.includes("inter") ? "inter" : null;
-  let customReg = null, customBld = null, customItl = null;
+  let fontKey = null;
+  if (fontStr.includes("outfit")) fontKey = "outfit";
+  else if (fontStr.includes("inter")) fontKey = "inter";
+  else if (fontStr.includes("roboto mono") || fontStr.includes("mono")) fontKey = "roboto mono";
+  else if (fontStr.includes("merriweather")) fontKey = "merriweather";
 
-  if (fontId && FONT_MAP[fontId]) {
+  if (fontKey && FONT_MAP[fontKey]) {
     try {
       const [regBytes, bldBytes, itlBytes] = await Promise.all([
-        fetch(FONT_MAP[fontId].regular).then(r => { if(!r.ok) throw new Error(); return r.arrayBuffer(); }),
-        fetch(FONT_MAP[fontId].bold).then(r => { if(!r.ok) throw new Error(); return r.arrayBuffer(); }),
-        fetch(FONT_MAP[fontId].italic).then(r => { if(!r.ok) throw new Error(); return r.arrayBuffer(); })
+        fetch(FONT_MAP[fontKey].regular).then((r) => { if (!r.ok) throw new Error(); return r.arrayBuffer(); }),
+        fetch(FONT_MAP[fontKey].bold).then((r) => { if (!r.ok) throw new Error(); return r.arrayBuffer(); }),
+        fetch(FONT_MAP[fontKey].italic).then((r) => { if (!r.ok) throw new Error(); return r.arrayBuffer(); })
       ]);
-      customReg = regBytes;
-      customBld = bldBytes;
-      customItl = itlBytes;
-    } catch (err) {
-      console.warn(`[PDF Generator] Failed to load custom Google Font "${fontId}", falling back to standard Helvetica:`, err);
+      return {
+        fontRegular: await pdfDoc.embedFont(regBytes),
+        fontBold: await pdfDoc.embedFont(bldBytes),
+        fontItalic: await pdfDoc.embedFont(itlBytes)
+      };
+    } catch {
+      // Fallback cleanly to standard fonts
     }
   }
 
-  if (customReg && customBld && customItl) {
-    fontRegular = await pdfDoc.embedFont(customReg);
-    fontBold = await pdfDoc.embedFont(customBld);
-    fontItalic = await pdfDoc.embedFont(customItl);
-  } else {
-    fontRegular = await pdfDoc.embedFont(baseReg);
-    fontBold = await pdfDoc.embedFont(baseBld);
-    fontItalic = await pdfDoc.embedFont(baseItl);
-  }
+  return {
+    fontRegular: await pdfDoc.embedFont(baseReg),
+    fontBold: await pdfDoc.embedFont(baseBld),
+    fontItalic: await pdfDoc.embedFont(baseItl)
+  };
+}
+
+export async function generateResumePDF(data, customization = {}) {
+  const pdfDoc = await PDFDocument.create();
+  pdfDoc.registerFontkit(fontkit);
+
+  const templateId = customization?.templateId || customization?.template || "classic";
+  const accentHex = customization?.accentColor || "#4f46e5";
+  const customFont = customization?.fontFamily || "";
+
+  const { fontRegular, fontBold, fontItalic } = await loadFontFamily(pdfDoc, customFont);
+
+  // Distinct font size multipliers: Small: 0.85x, Default: 1.05x, Large: 1.28x
+  const fontSizeSetting = customization?.fontSize || "default";
+  const userBaseFMult = fontSizeSetting === "small" ? 0.85 : fontSizeSetting === "large" ? 1.28 : 1.05;
+
+  // Premium Color Palette
+  const accentColor = hexToRgb(accentHex);
+  const darkCharcoal = rgb(0.11, 0.14, 0.19);
+  const mediumColor = rgb(0.3, 0.35, 0.4);
+  const grayColor = rgb(0.45, 0.5, 0.55);
+  const lightGray = rgb(0.85, 0.88, 0.9);
+  const whiteColor = rgb(1, 1, 1);
+  const translucentWhite = rgb(0.92, 0.94, 0.96);
+  const veryLightGray = rgb(0.92, 0.94, 0.95);
+
+  let currentMultiplier = userBaseFMult;
 
   // Layout Engine
   const buildLayout = (page, fMult) => {
@@ -200,9 +190,9 @@ export async function generateResumePDF(data, customization = {}) {
     let y = PAGE_HEIGHT - MARGIN_TOP;
 
     // Fixed widths
-    const sideW = isModern ? 220 : 0; // Sidebar width
-    const mainX = isModern ? sideW + 20 : MARGIN_X;
-    const mainW = isModern ? PAGE_WIDTH - mainX - 30 : CONTENT_W;
+    const sideW = isModern ? 195 : 0; // Sidebar width
+    const mainX = isModern ? sideW + 22 : MARGIN_X;
+    const mainW = isModern ? PAGE_WIDTH - mainX - 22 : CONTENT_W;
 
     // ── Core Drawing Helpers ──
     const drawT = (text, { x, yPos, size, font, color, maxW, align = "left", skipSanitize = false }) => {
@@ -264,33 +254,34 @@ export async function generateResumePDF(data, customization = {}) {
     var sidebarY = PAGE_HEIGHT - MARGIN_TOP;
 
     if (isModern) {
-      // Avatar (fully scales)
-      const rad = s(36);
+      // Avatar
+      const rad = s(34);
       if (page && pi.fullName) {
         const parts = pi.fullName.split(" ");
         let initials = (parts[0]?.[0] || "U").toUpperCase();
         if (parts.length > 1) initials += (parts[parts.length - 1]?.[0] || "").toUpperCase();
         
         const cx = sideW / 2;
-        const cy = y - rad; // Center of circle is one radius below y
-        page.drawCircle({ x: cx, y: cy, size: rad, color: translucentWhite });
-        drawT(initials, { x: cx, yPos: cy - rad * 0.28, size: s(28), font: fontBold, color: accentColor, align: "center" });
+        const cy = y - rad;
+        page.drawCircle({ x: cx, y: cy, size: rad, color: whiteColor, opacity: 0.18 });
+        const initW = fontBold.widthOfTextAtSize(initials, s(24));
+        drawT(initials, { x: cx - initW/2, yPos: cy - s(8), size: s(24), font: fontBold, color: whiteColor });
       }
-      y -= rad * 2 + s(35); 
+      y -= rad * 2 + s(28); 
 
       // Name
       if (pi.fullName) {
-        drawT(pi.fullName, { x: sideW/2, yPos: y, size: s(18), font: fontBold, color: whiteColor, align: "center", maxW: sideW - 30 });
-        y -= s(24);
+        drawT(pi.fullName, { x: sideW/2, yPos: y, size: s(16), font: fontBold, color: whiteColor, align: "center", maxW: sideW - 24 });
+        y -= s(22);
       }
       
-      drawLine(20, y, sideW - 20, 1.5, translucentWhite);
-      y -= s(24);
+      drawLine(20, y, sideW - 20, 1, whiteColor);
+      y -= s(20);
 
       sidebarY = y;
       
-      // Contact Section (No labels, just text, spaced nicely)
-      drawT("CONTACT", { x: 20, yPos: sidebarY, size: s(10), font: fontBold, color: whiteColor });
+      // Contact Section
+      drawT("CONTACT", { x: 18, yPos: sidebarY, size: s(9.5), font: fontBold, color: translucentWhite });
       sidebarY -= s(14);
 
       const contactArr = [
@@ -302,54 +293,54 @@ export async function generateResumePDF(data, customization = {}) {
       ].filter(Boolean);
 
       for (const val of contactArr) {
-        drawT(val, { x: 20, yPos: sidebarY, size: s(9.5), font: fontRegular, color: whiteColor, maxW: sideW - 40 });
-        sidebarY -= s(18);
+        drawT(val, { x: 18, yPos: sidebarY, size: s(9), font: fontRegular, color: whiteColor, maxW: sideW - 32 });
+        sidebarY -= s(16);
       }
       sidebarY -= s(10);
       
-      y = PAGE_HEIGHT - MARGIN_TOP - s(20);
+      y = PAGE_HEIGHT - MARGIN_TOP - s(10);
     } 
     else if (isClassic) {
       if (pi.fullName) {
-        drawT(pi.fullName, { x: PAGE_WIDTH / 2, yPos: y, size: s(26), font: fontBold, color: darkCharcoal, align: "center" });
-        y -= s(26) + s(12);
+        drawT(pi.fullName, { x: PAGE_WIDTH / 2, yPos: y, size: s(24), font: fontBold, color: darkCharcoal, align: "center" });
+        y -= s(24) + s(10);
       }
       
       const contactLine = [pi.email, pi.phone, pi.location].filter(Boolean).join("    |    ");
       if (contactLine) {
-        drawT(contactLine, { x: PAGE_WIDTH / 2, yPos: y, size: s(10), font: fontRegular, color: mediumColor, align: "center" });
-        y -= s(10) + s(8);
+        drawT(contactLine, { x: PAGE_WIDTH / 2, yPos: y, size: s(9.5), font: fontRegular, color: mediumColor, align: "center" });
+        y -= s(9.5) + s(6);
       }
 
       const linkLine = [pi.linkedin, pi.portfolio].filter(Boolean).join("    |    ");
       if (linkLine) {
-        drawT(linkLine, { x: PAGE_WIDTH / 2, yPos: y, size: s(10), font: fontRegular, color: accentColor, align: "center" });
-        y -= s(10) + s(12);
+        drawT(linkLine, { x: PAGE_WIDTH / 2, yPos: y, size: s(9.5), font: fontRegular, color: accentColor, align: "center" });
+        y -= s(9.5) + s(10);
       }
 
-      drawLine(PAGE_WIDTH / 2 - 200, y, PAGE_WIDTH / 2 + 200, 2.5, accentColor);
-      y -= s(24);
+      drawLine(MARGIN_X, y, PAGE_WIDTH - MARGIN_X, 2.5, accentColor);
+      y -= s(20);
     } 
     else if (isMinimal) {
       if (pi.fullName) {
-        drawT(pi.fullName, { x: MARGIN_X, yPos: y, size: s(28), font: fontBold, color: darkCharcoal });
-        y -= s(28) + s(12);
+        drawT(pi.fullName, { x: MARGIN_X, yPos: y, size: s(26), font: fontBold, color: darkCharcoal });
+        y -= s(26) + s(10);
       }
       
       const contactLine = [pi.email, pi.phone, pi.location].filter(Boolean).join("   ·   ");
       if (contactLine) {
-        drawT(contactLine, { x: MARGIN_X, yPos: y, size: s(10), font: fontRegular, color: grayColor });
-        y -= s(10) + s(8);
+        drawT(contactLine, { x: MARGIN_X, yPos: y, size: s(9.5), font: fontRegular, color: grayColor });
+        y -= s(9.5) + s(6);
       }
 
       const linkLine = [pi.linkedin, pi.portfolio].filter(Boolean).join("   ·   ");
       if (linkLine) {
-        drawT(linkLine, { x: MARGIN_X, yPos: y, size: s(9.5), font: fontRegular, color: accentColor });
-        y -= s(9.5) + s(8);
+        drawT(linkLine, { x: MARGIN_X, yPos: y, size: s(9), font: fontRegular, color: accentColor });
+        y -= s(9) + s(8);
       }
 
-      // No header line for minimal, just spacing
-      y -= s(20);
+      drawLine(MARGIN_X, y, PAGE_WIDTH - MARGIN_X, 1, lightGray);
+      y -= s(18);
     }
 
     // ── Helper to draw elegant section headers ──
@@ -359,42 +350,41 @@ export async function generateResumePDF(data, customization = {}) {
       if (isModern) {
         if (inSidebar) {
           drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(9.5), font: fontBold, color: translucentWhite, skipSanitize: true });
-          currentY -= s(10);
+          currentY -= s(8);
+          drawLine(xPos, currentY, xPos + width, 0.75, whiteColor);
         } else {
-          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(11.5), font: fontBold, color: accentColor });
-          currentY -= s(10);
-          drawLine(xPos, currentY, xPos + width, 1.5, translucentWhite); // Soft bottom border
+          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(11), font: fontBold, color: accentColor });
+          currentY -= s(8);
+          drawLine(xPos, currentY, xPos + width, 1.5, veryLightGray);
         }
       } 
       else if (isClassic) {
-        // Vertical accent bar on left
         const titleH = s(12);
-        if (page) page.drawRectangle({ x: xPos, y: currentY - s(2), width: 3, height: titleH + s(2), color: accentColor });
+        if (page) page.drawRectangle({ x: xPos, y: currentY - s(2), width: 3.5, height: titleH + s(2), color: accentColor });
         drawT(title.toUpperCase(), { x: xPos + 10, yPos: currentY, size: s(12), font: fontBold, color: accentColor });
-        currentY -= s(10);
+        currentY -= s(8);
         drawLine(xPos, currentY, xPos + width, 1, veryLightGray);
       } 
       else if (isMinimal) {
-        // Thin horizontal line above section
-        drawLine(xPos, currentY + s(14), xPos + width, 0.5, lightGray);
-        drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(10.5), font: fontBold, color: grayColor });
-        currentY -= s(10);
+        drawLine(xPos, currentY + s(12), xPos + width, 0.75, lightGray);
+        drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(10), font: fontBold, color: grayColor });
+        currentY -= s(8);
       }
       
-      return currentY - s(14);
+      return currentY - s(12);
     };
 
     // ════════════════════════════════════════════
-    // MAIN CONTENT SECTIONS
+    // MAIN CONTENT SECTIONS (Synchronized Order)
     // ════════════════════════════════════════════
 
     // 1. SUMMARY
     if (summary) {
       y = drawSectionTitle("Professional Summary", y, mainX, mainW);
       const consumed = drawWrapped(summary, {
-        x: mainX, yPos: y, w: mainW, font: fontRegular, size: s(10.5), color: darkCharcoal, lineHeight: 1.55
+        x: mainX, yPos: y, w: mainW, font: fontRegular, size: s(10), color: darkCharcoal, lineHeight: 1.5
       });
-      y -= consumed + s(18);
+      y -= consumed + s(16);
     }
 
     // 2. EXPERIENCE
@@ -406,19 +396,19 @@ export async function generateResumePDF(data, customization = {}) {
         
         const role = exp.title || "Role";
         const dates = [exp.startDate, exp.endDate].filter(Boolean).join(" - ");
-        const datesW = dates ? fontRegular.widthOfTextAtSize(sanitize(dates), s(10)) : 0;
+        const datesW = dates ? fontRegular.widthOfTextAtSize(sanitize(dates), s(9.5)) : 0;
         
         if (datesW > 0) {
-            drawT(dates, { x: mainX + mainW, yPos: y, size: s(10), font: fontRegular, color: grayColor, align: "right" });
+            drawT(dates, { x: mainX + mainW, yPos: y, size: s(9.5), font: fontRegular, color: grayColor, align: "right" });
         }
         
         const roleW = mainW - datesW - 10;
-        const consumedRole = drawWrapped(role, { x: mainX, yPos: y, w: roleW, font: fontBold, size: s(11.5), color: darkCharcoal, lineHeight: 1.3 });
+        const consumedRole = drawWrapped(role, { x: mainX, yPos: y, w: roleW, font: fontBold, size: s(11), color: darkCharcoal, lineHeight: 1.25 });
         y -= consumedRole + s(2);
 
-        const compLoc = [exp.company, exp.location].filter(Boolean).join("  •  ");
+        const compLoc = [exp.company, exp.location].filter(Boolean).join("  ·  ");
         if (compLoc) {
-          const consumedComp = drawWrapped(compLoc, { x: mainX, yPos: y, w: mainW, font: fontItalic, size: s(10.5), color: isClassic ? grayColor : accentColor, lineHeight: 1.3 });
+          const consumedComp = drawWrapped(compLoc, { x: mainX, yPos: y, w: mainW, font: fontItalic, size: s(10), color: isClassic ? grayColor : accentColor, lineHeight: 1.25 });
           y -= consumedComp + s(4);
         } else {
           y -= s(4);
@@ -426,16 +416,17 @@ export async function generateResumePDF(data, customization = {}) {
 
         const bullets = (exp.bullets || []).filter((b) => b && typeof b === "string" && b.trim());
         for (const bullet of bullets) {
-          if (page) page.drawCircle({ x: mainX + 4, y: y + 3, size: 5, color: grayColor });
+          // Precise bullet point circle (radius 1.8pt, clean alignment)
+          if (page) page.drawCircle({ x: mainX + 4, y: y + s(3.5), size: s(1.8), color: isClassic ? accentColor : grayColor });
           const consumed = drawWrapped(bullet.trim(), {
-            x: mainX + 16, yPos: y, w: mainW - 18, font: fontRegular, size: s(10.5), color: darkCharcoal, lineHeight: 1.55
+            x: mainX + 12, yPos: y, w: mainW - 14, font: fontRegular, size: s(10), color: darkCharcoal, lineHeight: 1.5
           });
-          y -= consumed + s(4);
+          y -= consumed + s(3);
         }
         
-        y -= s(12);
+        y -= s(10);
       }
-      y -= s(6);
+      y -= s(4);
     }
 
     // 3. EDUCATION
@@ -444,19 +435,19 @@ export async function generateResumePDF(data, customization = {}) {
       for (const edu of educations) {
         const deg = edu.degree || "Degree";
         const dates = edu.year || "";
-        const datesW = dates ? fontRegular.widthOfTextAtSize(sanitize(dates), s(10)) : 0;
+        const datesW = dates ? fontRegular.widthOfTextAtSize(sanitize(dates), s(9.5)) : 0;
         
         if (datesW > 0) {
-            drawT(dates, { x: mainX + mainW, yPos: y, size: s(10), font: fontRegular, color: grayColor, align: "right" });
+            drawT(dates, { x: mainX + mainW, yPos: y, size: s(9.5), font: fontRegular, color: grayColor, align: "right" });
         }
         
         const degW = mainW - datesW - 10;
-        const consumedDeg = drawWrapped(deg, { x: mainX, yPos: y, w: degW, font: fontBold, size: s(11.5), color: darkCharcoal, lineHeight: 1.3 });
+        const consumedDeg = drawWrapped(deg, { x: mainX, yPos: y, w: degW, font: fontBold, size: s(11), color: darkCharcoal, lineHeight: 1.25 });
         y -= consumedDeg + s(2);
 
-        const instLine = [edu.institution, edu.gpa ? `GPA: ${edu.gpa}` : ""].filter(Boolean).join("  •  ");
+        const instLine = [edu.institution, edu.gpa ? `GPA: ${edu.gpa}` : ""].filter(Boolean).join("  ·  ");
         if (instLine) {
-          const consumedInst = drawWrapped(instLine, { x: mainX, yPos: y, w: mainW, font: fontItalic, size: s(10.5), color: darkCharcoal, lineHeight: 1.3 });
+          const consumedInst = drawWrapped(instLine, { x: mainX, yPos: y, w: mainW, font: fontItalic, size: s(10), color: darkCharcoal, lineHeight: 1.25 });
           y -= consumedInst + s(4);
         } else {
           y -= s(4);
@@ -464,45 +455,13 @@ export async function generateResumePDF(data, customization = {}) {
         
         y -= s(6);
       }
-      y -= s(6);
+      y -= s(4);
     }
 
-    // 4. PROJECTS
-    if (projects.length > 0) {
-      y = drawSectionTitle("Projects", y, mainX, mainW);
-      for (const proj of projects) {
-        const pName = proj.name;
-        const pTech = proj.techStack ? `(${proj.techStack})` : "";
-        
-        const consumedName = drawWrapped(pName, { x: mainX, yPos: y, w: mainW, font: fontBold, size: s(11.5), color: darkCharcoal, lineHeight: 1.3 });
-        y -= consumedName + s(2);
-        
-        if (pTech) {
-          const consumedTech = drawWrapped(pTech, { x: mainX, yPos: y, w: mainW, font: fontBold, size: s(9.5), color: accentColor, lineHeight: 1.3 });
-          y -= consumedTech + s(4);
-        } else {
-          y -= s(4);
-        }
-
-        if (proj.description) {
-          const consumedDesc = drawWrapped(proj.description.trim(), {
-            x: mainX, yPos: y, w: mainW, font: fontRegular, size: s(10.5), color: darkCharcoal, lineHeight: 1.55
-          });
-          y -= consumedDesc + s(4);
-        }
-
-        if (proj.link) {
-          drawT(proj.link.trim(), { x: mainX, yPos: y, size: s(9.5), font: fontRegular, color: accentColor });
-          y -= s(12);
-        }
-        y -= s(8);
-      }
-      y -= s(6);
-    }
-
+    // 4. SKILLS (Rendered before projects for single-column templates to match screen)
     let sY = isModern ? sidebarY : y;
-    let sX = isModern ? 20 : mainX;
-    const sW = isModern ? sideW - 40 : mainW;
+    let sX = isModern ? 18 : mainX;
+    const sW = isModern ? sideW - 36 : mainW;
 
     if (skills.length > 0) {
       if (isModern) {
@@ -510,10 +469,10 @@ export async function generateResumePDF(data, customization = {}) {
         
         // Render pill tags in modern sidebar
         const tagFontSize = s(8.5);
-        const tagPadX = 8;
-        const tagPadY = s(4);
-        const tagGapX = 6;
-        const tagGapY = s(8);
+        const tagPadX = 7;
+        const tagPadY = s(3.5);
+        const tagGapX = 5;
+        const tagGapY = s(6);
         const tagH = tagFontSize + tagPadY * 2;
         let tagX = sX;
         let tagRowY = sY;
@@ -522,26 +481,25 @@ export async function generateResumePDF(data, customization = {}) {
           const textW = fontBold.widthOfTextAtSize(sanitize(skill), tagFontSize);
           const totalW = textW + tagPadX * 2;
           
-          if (tagX + totalW > sX + sW - 10) {
+          if (tagX + totalW > sX + sW) {
             tagX = sX;
             tagRowY -= tagH + tagGapY;
           }
 
-          if (page) page.drawRectangle({ x: tagX, y: tagRowY - tagH, width: totalW, height: tagH, color: whiteColor, opacity: 0.1, borderColor: whiteColor, borderWidth: 0.5, borderOpacity: 0.3 });
-          drawT(skill, { x: tagX + tagPadX, yPos: tagRowY - tagFontSize - tagPadY + s(3), size: tagFontSize, font: fontBold, color: whiteColor });
+          if (page) page.drawRectangle({ x: tagX, y: tagRowY - tagH, width: totalW, height: tagH, color: whiteColor, opacity: 0.15, borderColor: whiteColor, borderWidth: 0.5, borderOpacity: 0.3 });
+          drawT(skill, { x: tagX + tagPadX, yPos: tagRowY - tagFontSize - tagPadY + s(2), size: tagFontSize, font: fontBold, color: whiteColor });
           
           tagX += totalW + tagGapX;
         }
-        sY = tagRowY - tagH - s(16);
+        sY = tagRowY - tagH - s(14);
 
       } else if (isClassic) {
         y = drawSectionTitle("Technical Skills", y, sX, sW);
-        // Inline tags with accent tint
         const tagFontSize = s(9.5);
-        const tagPadX = 10;
-        const tagPadY = s(4);
-        const tagGapX = 8;
-        const tagGapY = s(8);
+        const tagPadX = 9;
+        const tagPadY = s(3.5);
+        const tagGapX = 6;
+        const tagGapY = s(6);
         const tagH = tagFontSize + tagPadY * 2;
         let tagX = sX;
         let tagRowY = y;
@@ -553,66 +511,101 @@ export async function generateResumePDF(data, customization = {}) {
             tagX = sX;
             tagRowY -= tagH + tagGapY;
           }
-          if (page) page.drawRectangle({ x: tagX, y: tagRowY - tagH, width: totalW, height: tagH, color: accentColor, opacity: 0.05, borderColor: accentColor, borderWidth: 0.5, borderOpacity: 0.2 });
-          drawT(skill, { x: tagX + tagPadX, yPos: tagRowY - tagFontSize - tagPadY + s(3), size: tagFontSize, font: fontBold, color: darkCharcoal });
+          if (page) page.drawRectangle({ x: tagX, y: tagRowY - tagH, width: totalW, height: tagH, color: accentColor, opacity: 0.08, borderColor: accentColor, borderWidth: 0.5, borderOpacity: 0.25 });
+          drawT(skill, { x: tagX + tagPadX, yPos: tagRowY - tagFontSize - tagPadY + s(2), size: tagFontSize, font: fontBold, color: darkCharcoal });
           tagX += totalW + tagGapX;
         }
-        y = tagRowY - tagH - s(16);
+        y = tagRowY - tagH - s(14);
       } else {
         y = drawSectionTitle("Technical Skills", y, sX, sW);
         const skillText = skills.join("    ·    ");
-        const consumed = drawWrapped(skillText, { x: sX, yPos: y, w: sW, font: fontRegular, size: s(10.5), color: darkCharcoal, lineHeight: 1.6 });
-        y -= consumed + s(16);
+        const consumed = drawWrapped(skillText, { x: sX, yPos: y, w: sW, font: fontRegular, size: s(10), color: darkCharcoal, lineHeight: 1.5 });
+        y -= consumed + s(14);
       }
     }
 
+    // 5. PROJECTS
+    if (projects.length > 0) {
+      y = drawSectionTitle("Projects", y, mainX, mainW);
+      for (const proj of projects) {
+        const pName = proj.name;
+        const pTech = proj.techStack ? `(${proj.techStack})` : "";
+        
+        const consumedName = drawWrapped(pName, { x: mainX, yPos: y, w: mainW, font: fontBold, size: s(11), color: darkCharcoal, lineHeight: 1.25 });
+        y -= consumedName + s(2);
+        
+        if (pTech) {
+          const consumedTech = drawWrapped(pTech, { x: mainX, yPos: y, w: mainW, font: fontBold, size: s(9), color: accentColor, lineHeight: 1.25 });
+          y -= consumedTech + s(4);
+        } else {
+          y -= s(4);
+        }
+
+        if (proj.description) {
+          const consumedDesc = drawWrapped(proj.description.trim(), {
+            x: mainX, yPos: y, w: mainW, font: fontRegular, size: s(10), color: darkCharcoal, lineHeight: 1.5
+          });
+          y -= consumedDesc + s(4);
+        }
+
+        if (proj.link) {
+          drawT(proj.link.trim(), { x: mainX, yPos: y, size: s(9), font: fontRegular, color: accentColor });
+          y -= s(10);
+        }
+        y -= s(6);
+      }
+      y -= s(4);
+    }
+
+    // 6. CERTIFICATIONS
     if (certs.length > 0) {
       if (isModern) {
         sY = drawSectionTitle("Certifications", sY, sX, sW, true);
         for (const cert of certs) {
-          drawT(cert.name, { x: sX, yPos: sY, size: s(10), font: fontBold, color: whiteColor, maxW: sW - 10 });
-          sY -= s(12);
+          drawT(cert.name, { x: sX, yPos: sY, size: s(9.5), font: fontBold, color: whiteColor, maxW: sW });
+          sY -= s(11);
           if (cert.issuer) {
-            drawT(cert.issuer, { x: sX, yPos: sY, size: s(9), font: fontRegular, color: translucentWhite, maxW: sW - 10 });
-            sY -= s(12);
+            drawT(cert.issuer, { x: sX, yPos: sY, size: s(8.5), font: fontRegular, color: translucentWhite, maxW: sW });
+            sY -= s(11);
           }
           if (cert.year) {
-            drawT(cert.year, { x: sX, yPos: sY, size: s(9), font: fontRegular, color: translucentWhite });
-            sY -= s(12);
+            drawT(cert.year, { x: sX, yPos: sY, size: s(8.5), font: fontRegular, color: translucentWhite });
+            sY -= s(11);
           }
-          sY -= s(4);
+          sY -= s(3);
         }
-        sY -= s(10);
+        sY -= s(8);
       } else {
         y = drawSectionTitle("Certifications", y, sX, sW);
         for (const cert of certs) {
           const certLeft = `${cert.name}${cert.issuer ? ` — ${cert.issuer}` : ""}`;
           const certRight = cert.year ? `${cert.year}` : "";
-          drawT(certLeft, { x: sX, yPos: y, size: s(10.5), font: fontBold, color: darkCharcoal });
-          if (certRight) drawT(certRight, { x: sX + sW, yPos: y, size: s(9.5), font: fontItalic, color: grayColor, align: "right" });
-          y -= s(16);
+          drawT(certLeft, { x: sX, yPos: y, size: s(10), font: fontBold, color: darkCharcoal });
+          if (certRight) drawT(certRight, { x: sX + sW, yPos: y, size: s(9), font: fontItalic, color: grayColor, align: "right" });
+          y -= s(14);
         }
         y -= s(4);
       }
     }
 
+    // 7. LANGUAGES
     if (langs.length > 0) {
       if (isModern) {
         sY = drawSectionTitle("Languages", sY, sX, sW, true);
         for (const lang of langs) {
-          drawT(lang.language, { x: sX, yPos: sY, size: s(10), font: fontBold, color: whiteColor });
-          sY -= s(12);
+          drawT(lang.language, { x: sX, yPos: sY, size: s(9.5), font: fontBold, color: whiteColor });
+          sY -= s(11);
           if (lang.proficiency) {
-            drawT(lang.proficiency, { x: sX, yPos: sY, size: s(9), font: fontRegular, color: translucentWhite });
-            sY -= s(12);
+            drawT(lang.proficiency, { x: sX, yPos: sY, size: s(8.5), font: fontRegular, color: translucentWhite });
+            sY -= s(11);
           }
-          sY -= s(4);
+          sY -= s(3);
         }
       } else {
         y = drawSectionTitle("Languages", y, sX, sW);
         const langText = langs.map(l => `${l.language}${l.proficiency ? ` (${l.proficiency})` : ""}`).join("    ·    ");
-        const consumed = drawWrapped(langText, { x: sX, yPos: y, w: sW, font: fontRegular, size: s(10.5), color: darkCharcoal });
-        y -= consumed + s(16);
+        const consumed = drawWrapped(langText, { x: sX, yPos: y, w: sW, font: fontRegular, size: s(10), color: darkCharcoal });
+        y -= consumed + s(14);
       }
     }
 
@@ -625,11 +618,11 @@ export async function generateResumePDF(data, customization = {}) {
 
   // Determine Auto-Fitter bounds based on user's manual font size choice
   let maxAllowedMultiplier = 1.45;
-  if (fontSizeSetting === "small") maxAllowedMultiplier = 0.95; // Prevent stretching if user explicitly wants small text
+  if (fontSizeSetting === "small") maxAllowedMultiplier = 0.90; // Prevent stretching if user explicitly wants small text
   else if (fontSizeSetting === "large") maxAllowedMultiplier = 1.65; // Allow extra stretching if user wants large text
 
   // Shrink Loop: If content overflows page, shrink fonts incrementally
-  while (height > PAGE_HEIGHT && currentMultiplier > 0.45) { // Lowered from 0.7 to 0.45 to prevent cut-off for long resumes
+  while (height > PAGE_HEIGHT && currentMultiplier > 0.45) {
     currentMultiplier -= 0.025;
     height = buildLayout(null, currentMultiplier);
   }
@@ -657,92 +650,36 @@ export async function generateResumePDF(data, customization = {}) {
 /**
  * Generates an A4 PDF for Cover Letter based on the selected template and fonts.
  */
-export async function generateCoverLetterPDF(data, custom) {
-  const { PDFDocument, rgb } = await import("pdf-lib");
-  const fontkit = (await import("@pdf-lib/fontkit")).default;
+export async function generateCoverLetterPDF(data, custom = {}) {
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
 
-  const PAGE_WIDTH = 595.28;
-  const PAGE_HEIGHT = 841.89;
-  const MARGIN_X = 50;
-  const MARGIN_TOP = 50;
-  const CONTENT_W = PAGE_WIDTH - MARGIN_X * 2;
+  const customFont = custom?.fontFamily || "";
+  const { fontRegular, fontBold } = await loadFontFamily(pdfDoc, customFont);
 
-  const hexToRgb = (hex) => {
-    let clr = (hex || "#4f46e5").replace("#", "");
-    if (clr.length === 3) clr = clr.split("").map(c => c + c).join("");
-    return rgb(parseInt(clr.substring(0, 2), 16) / 255, parseInt(clr.substring(2, 4), 16) / 255, parseInt(clr.substring(4, 6), 16) / 255);
-  };
-  const accentClr = hexToRgb(custom?.accentColor);
-  const textClr = rgb(0.15, 0.17, 0.21); // Slate 800
+  const accentClr = hexToRgb(custom?.accentColor || "#4f46e5");
+  const textClr = rgb(0.12, 0.16, 0.22); // Dark slate charcoal
+  const mutedClr = rgb(0.45, 0.5, 0.55);
 
-  // Fonts
-  const { StandardFonts } = await import("pdf-lib");
-  const baseReg = StandardFonts.Helvetica;
-  const baseBld = StandardFonts.HelveticaBold;
+  const templateId = custom?.templateId || "classic";
+  const { name, email, phone, targetRole, targetCompany, companyAddress, hiringManager, letterContent, letterAlignment } = data || {};
 
-  let fontRegular, fontBold;
-  const fontId = custom?.fontFamily || "";
-  let customReg, customBld;
-
-  if (fontId.includes("Inter")) {
-    try {
-      const [regBytes, bldBytes] = await Promise.all([
-        fetch("https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuLyfMZhrj72A.ttf").then(r => r.arrayBuffer()),
-        fetch("https://fonts.gstatic.com/s/inter/v20/UcCO3FwrK3iLTeHuS_nVMrMxCp50SjIw2boKoduKmMEVuFuYMZhrj72A.ttf").then(r => r.arrayBuffer())
-      ]);
-      customReg = regBytes; customBld = bldBytes;
-    } catch (e) { console.warn(e); }
-  } else if (fontId.includes("Outfit")) {
-    try {
-      const [regBytes, bldBytes] = await Promise.all([
-        fetch("https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4TC1C4G-FCAp.ttf").then(r => r.arrayBuffer()),
-        fetch("https://fonts.gstatic.com/s/outfit/v15/QGYyz_MVcBeNP4NjuGObqx1XmO1I4deyC4G-FCAp.ttf").then(r => r.arrayBuffer()) 
-      ]);
-      customReg = regBytes; customBld = bldBytes;
-    } catch (e) { console.warn(e); }
-  }
-
-  if (customReg && customBld) {
-    fontRegular = await pdfDoc.embedFont(customReg);
-    fontBold = await pdfDoc.embedFont(customBld);
-  } else {
-    fontRegular = await pdfDoc.embedFont(baseReg);
-    fontBold = await pdfDoc.embedFont(baseBld);
-  }
-
+  const baseSize = custom?.fontSize === 'small' ? 9.5 : custom?.fontSize === 'large' ? 13 : 11;
   const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   let y = PAGE_HEIGHT - MARGIN_TOP;
 
   const drawT = (text, x, yPos, size, font, color) => {
     if (!text) return;
-    const safe = text.replace(/[\x00-\x1F\x7F-\x9F]/g, "");
+    const safe = sanitize(text);
+    if (!safe) return;
     page.drawText(safe, { x, y: yPos, size, font, color });
   };
 
   const drawWrapped = (text, startX, yPos, w, font, size, color, align = 'left') => {
-    const lines = [];
-    let currentLine = '';
-    // Replace newlines with space, then strip control chars
-    const safeText = (text || '').replace(/\n/g, " ").replace(/[\x00-\x1F\x7F-\x9F]/g, "");
-    const words = safeText.split(/\s+/).filter(Boolean);
-    
-    for (const word of words) {
-      const testLine = currentLine ? `${currentLine} ${word}` : word;
-      if (font.widthOfTextAtSize(testLine, size) <= w) {
-        currentLine = testLine;
-      } else {
-        if (currentLine) lines.push(currentLine);
-        currentLine = word;
-      }
-    }
-    if (currentLine) lines.push(currentLine);
-
+    const lines = wrapText(sanitize(text), w, font, size);
     let cy = yPos;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
       if (align === 'center') {
         const lw = font.widthOfTextAtSize(line, size);
         drawT(line, startX + (w - lw) / 2, cy, size, font, color);
@@ -760,115 +697,111 @@ export async function generateCoverLetterPDF(data, custom) {
           drawT(line, startX, cy, size, font, color);
         }
       } else {
-        // Left align (or last line of justify)
         drawT(line, startX, cy, size, font, color);
       }
-      
-      cy -= size * 1.5;
+      cy -= size * 1.55;
     }
     return cy;
   };
 
-  const templateId = custom?.templateId || "classic";
-  const { name, email, phone, targetRole, targetCompany, companyAddress, hiringManager, letterContent, letterAlignment } = data;
-
-  const baseSize = custom?.fontSize === 'small' ? 10 : custom?.fontSize === 'large' ? 12 : 11;
-
   if (templateId === "modern") {
-    // Sidebar
-    const sideW = 200;
+    const sideW = 195;
     page.drawRectangle({ x: 0, y: 0, width: sideW, height: PAGE_HEIGHT, color: accentClr });
     
     let sy = PAGE_HEIGHT - 60;
-    // Initial avatar
-    page.drawCircle({ x: sideW / 2, y: sy - 30, size: 40, color: rgb(1,1,1), opacity: 0.2 });
-    const init = name ? name.split(' ').map(n => n[0]).join('') : 'C';
-    page.drawText(init, { x: sideW/2 - 15, y: sy - 40, size: 28, font: fontBold, color: rgb(1,1,1) });
-    sy -= 100;
+    // Initial avatar with accurate centering
+    const init = name ? name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'C';
+    page.drawCircle({ x: sideW / 2, y: sy - 30, size: 36, color: rgb(1,1,1), opacity: 0.18 });
+    const initW = fontBold.widthOfTextAtSize(init, 24);
+    page.drawText(init, { x: sideW/2 - initW/2, y: sy - 38, size: 24, font: fontBold, color: rgb(1,1,1) });
+    sy -= 85;
     
-    drawT(name || "Your Name", 30, sy, 22, fontBold, rgb(1,1,1));
+    drawT(name || "Your Name", 22, sy, 18, fontBold, rgb(1,1,1));
     sy -= 10;
-    page.drawLine({ start: { x: 30, y: sy }, end: { x: 60, y: sy }, thickness: 2, color: rgb(1,1,1), opacity: 0.4 });
-    sy -= 30;
+    page.drawLine({ start: { x: 22, y: sy }, end: { x: 55, y: sy }, thickness: 2, color: rgb(1,1,1), opacity: 0.4 });
+    sy -= 24;
     
-    drawT(email || "Email", 30, sy, 11, fontRegular, rgb(1,1,1)); sy -= 20;
-    drawT(phone || "Phone", 30, sy, 11, fontRegular, rgb(1,1,1));
+    if (email) { drawT(email, 22, sy, 9.5, fontRegular, rgb(1,1,1)); sy -= 18; }
+    if (phone) { drawT(phone, 22, sy, 9.5, fontRegular, rgb(1,1,1)); sy -= 18; }
     
     // Main Content
     let cy = PAGE_HEIGHT - 60;
-    const mx = sideW + 40;
-    const mw = PAGE_WIDTH - mx - 40;
+    const mx = sideW + 36;
+    const mw = PAGE_WIDTH - mx - 36;
     
     if (data.date) {
-      drawT(new Date(data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }), mx, cy, baseSize, fontBold, textClr);
-      cy -= 30;
+      try {
+        const formattedDate = new Date(data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+        drawT(formattedDate, mx, cy, baseSize, fontBold, textClr);
+        cy -= (baseSize * 2.2);
+      } catch {
+        drawT(data.date, mx, cy, baseSize, fontBold, textClr);
+        cy -= (baseSize * 2.2);
+      }
     }
     
-    if (hiringManager) {
-      drawT(hiringManager, mx, cy, baseSize, fontBold, textClr); cy -= (baseSize * 1.5);
-    }
-    if (targetRole) {
-      drawT(targetRole, mx, cy, baseSize, fontBold, textClr); cy -= (baseSize * 1.5);
-    }
-    if (targetCompany) {
-      drawT(targetCompany, mx, cy, baseSize, fontBold, textClr); cy -= (baseSize * 1.5);
-    }
-    if (companyAddress) {
-      drawT(companyAddress, mx, cy, baseSize, fontRegular, textClr); cy -= (baseSize * 1.5);
-    }
-    cy -= 15;
+    if (hiringManager) { drawT(hiringManager, mx, cy, baseSize, fontBold, textClr); cy -= (baseSize * 1.4); }
+    if (targetRole) { drawT(targetRole, mx, cy, baseSize, fontBold, textClr); cy -= (baseSize * 1.4); }
+    if (targetCompany) { drawT(targetCompany, mx, cy, baseSize, fontBold, textClr); cy -= (baseSize * 1.4); }
+    if (companyAddress) { drawT(companyAddress, mx, cy, baseSize, fontRegular, mutedClr); cy -= (baseSize * 1.4); }
+    cy -= 12;
     
-    const paras = (letterContent || "").split('\n\n');
+    const paras = (letterContent || "").split(/\n+/);
     for (const para of paras) {
       if (para.trim()) {
         cy = drawWrapped(para.trim(), mx, cy, mw, fontRegular, baseSize, textClr, letterAlignment || 'left');
-        cy -= (baseSize * 1.5);
+        cy -= (baseSize * 0.8);
       }
     }
 
   } else {
     // Classic & Minimal
     if (templateId === "classic") {
-      const nameW = fontBold.widthOfTextAtSize(name || "Your Name", 28);
-      drawT(name || "Your Name", (PAGE_WIDTH - nameW)/2, y, 28, fontBold, textClr);
-      y -= 20;
-      const contactStr = `${email || 'Email'}  •  ${phone || 'Phone'}`;
-      const cw = fontRegular.widthOfTextAtSize(contactStr, 11);
-      drawT(contactStr, (PAGE_WIDTH - cw)/2, y, 11, fontRegular, textClr);
-      y -= 15;
-      page.drawLine({ start: { x: MARGIN_X, y }, end: { x: PAGE_WIDTH - MARGIN_X, y }, thickness: 1, color: accentClr });
-      y -= 30;
+      const nameW = fontBold.widthOfTextAtSize(name || "Your Name", 24);
+      drawT(name || "Your Name", (PAGE_WIDTH - nameW)/2, y, 24, fontBold, textClr);
+      y -= 18;
+      const contactStr = [email, phone].filter(Boolean).join("    |    ");
+      if (contactStr) {
+        const cw = fontRegular.widthOfTextAtSize(contactStr, 10);
+        drawT(contactStr, (PAGE_WIDTH - cw)/2, y, 10, fontRegular, mutedClr);
+        y -= 12;
+      }
+      page.drawLine({ start: { x: MARGIN_X, y }, end: { x: PAGE_WIDTH - MARGIN_X, y }, thickness: 2, color: accentClr });
+      y -= 26;
     } else {
-      drawT(name || "Your Name", MARGIN_X, y, 28, fontBold, accentClr);
-      y -= 20;
-      drawT(`${email || 'Email'}  •  ${phone || 'Phone'}`, MARGIN_X, y, 11, fontRegular, textClr);
-      y -= 40;
+      drawT(name || "Your Name", MARGIN_X, y, 26, fontBold, accentClr);
+      y -= 18;
+      const contactStr = [email, phone].filter(Boolean).join("   ·   ");
+      if (contactStr) {
+        drawT(contactStr, MARGIN_X, y, 10, fontRegular, mutedClr);
+        y -= 12;
+      }
+      page.drawLine({ start: { x: MARGIN_X, y }, end: { x: PAGE_WIDTH - MARGIN_X, y }, thickness: 1, color: rgb(0.85, 0.88, 0.9) });
+      y -= 24;
     }
 
     if (data.date) {
-      drawT(new Date(data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' }), MARGIN_X, y, baseSize, fontBold, textClr);
-      y -= 30;
+      try {
+        const formattedDate = new Date(data.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+        drawT(formattedDate, MARGIN_X, y, baseSize, fontBold, textClr);
+        y -= (baseSize * 2.2);
+      } catch {
+        drawT(data.date, MARGIN_X, y, baseSize, fontBold, textClr);
+        y -= (baseSize * 2.2);
+      }
     }
     
-    if (hiringManager) {
-      drawT(hiringManager, MARGIN_X, y, baseSize, fontBold, textClr); y -= (baseSize * 1.5);
-    }
-    if (targetRole) {
-      drawT(targetRole, MARGIN_X, y, baseSize, fontBold, textClr); y -= (baseSize * 1.5);
-    }
-    if (targetCompany) {
-      drawT(targetCompany, MARGIN_X, y, baseSize, fontBold, textClr); y -= (baseSize * 1.5);
-    }
-    if (companyAddress) {
-      drawT(companyAddress, MARGIN_X, y, baseSize, fontRegular, textClr); y -= (baseSize * 1.5);
-    }
-    y -= 15;
+    if (hiringManager) { drawT(hiringManager, MARGIN_X, y, baseSize, fontBold, textClr); y -= (baseSize * 1.4); }
+    if (targetRole) { drawT(targetRole, MARGIN_X, y, baseSize, fontBold, textClr); y -= (baseSize * 1.4); }
+    if (targetCompany) { drawT(targetCompany, MARGIN_X, y, baseSize, fontBold, textClr); y -= (baseSize * 1.4); }
+    if (companyAddress) { drawT(companyAddress, MARGIN_X, y, baseSize, fontRegular, mutedClr); y -= (baseSize * 1.4); }
+    y -= 12;
 
-    const paras = (letterContent || "").split('\n\n');
+    const paras = (letterContent || "").split(/\n+/);
     for (const para of paras) {
       if (para.trim()) {
         y = drawWrapped(para.trim(), MARGIN_X, y, CONTENT_W, fontRegular, baseSize, textClr, letterAlignment || 'left');
-        y -= (baseSize * 1.5);
+        y -= (baseSize * 0.8);
       }
     }
   }
