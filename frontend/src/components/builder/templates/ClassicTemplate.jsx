@@ -124,10 +124,10 @@ const ClassicTemplate = ({ data, customization }) => {
                   style={{
                     fontSize: 9.5 * sizeScale,
                     fontWeight: 600,
-                    padding: "3px 10px",
-                    borderRadius: 4,
-                    background: `${accent}10`,
-                    border: `1px solid ${accent}25`,
+                    padding: "3px 12px",
+                    borderRadius: 9999,
+                    background: `${accent}12`,
+                    border: `1px solid ${accent}30`,
                     color: "#374151",
                     fontFamily,
                   }}
