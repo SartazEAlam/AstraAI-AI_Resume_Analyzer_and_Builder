@@ -1,10 +1,10 @@
 import React, { useRef, useState } from "react";
-import { Download, Target, FileText, Check, Loader2, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import { Download, Target, FileText, Check, Loader2, ZoomIn, ZoomOut, Maximize2, Printer } from "lucide-react";
 import { generateResumePDF } from "../../utils/pdfGenerator";
 
 /* ── Resume Preview Panel ──
    Shows the selected template at a scaled-down size with interactive zoom controls.
-   Provides Direct Vector PDF Export (100% ATS-Compliant), ATS .TXT, and ATS Analyze. */
+   Provides Direct Vector PDF Export (100% ATS-Compliant), Exact 1:1 Print/Save PDF, ATS .TXT, and ATS Analyze. */
 
 const ResumePreview = ({ data, customization, TemplateComponent, onAnalyze }) => {
   const previewRef = useRef(null);
@@ -13,7 +13,12 @@ const ResumePreview = ({ data, customization, TemplateComponent, onAnalyze }) =>
   const [downloadedTxt, setDownloadedTxt] = useState(false);
   const [zoomScale, setZoomScale] = useState(0.48);
 
-  /* 1. Export ATS-Compliant PDF using pdf-lib (real text runs, 100% extractable) */
+  /* 1. Direct 1:1 Print / Save as PDF via Browser Native Vector Engine */
+  const handlePrintPDF = () => {
+    window.print();
+  };
+
+  /* 2. Export ATS-Compliant PDF using pdf-lib (Standard 14 Type 1 Fonts) */
   const handleExportPDF = async () => {
     setDownloadingPdf(true);
     try {
@@ -146,11 +151,11 @@ const ResumePreview = ({ data, customization, TemplateComponent, onAnalyze }) =>
     <div className="flex flex-col h-full">
       {/* Action Buttons */}
       <div className="flex flex-wrap items-center gap-2 mb-2">
-        {/* Direct Vector PDF Download Button */}
+        {/* Unified Direct PDF Download Button */}
         <button
           onClick={handleExportPDF}
           disabled={downloadingPdf}
-          className="flex-1 min-w-[130px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md shadow-indigo-500/20"
+          className="flex-1 min-w-[150px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition-all shadow-md shadow-indigo-500/20"
         >
           {downloadingPdf ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -159,7 +164,7 @@ const ResumePreview = ({ data, customization, TemplateComponent, onAnalyze }) =>
           ) : (
             <Download className="w-3.5 h-3.5" />
           )}
-          {downloadingPdf ? "Generating..." : downloadedPdf ? "PDF Exported!" : "Export to PDF"}
+          {downloadingPdf ? "Generating PDF..." : downloadedPdf ? "PDF Downloaded!" : "Download PDF"}
         </button>
 
         {/* ATS .TXT Export Button */}
@@ -249,6 +254,7 @@ const ResumePreview = ({ data, customization, TemplateComponent, onAnalyze }) =>
       >
         <div
           ref={previewRef}
+          id="resume-printable-area"
           className="shadow-xl rounded-sm transition-transform duration-150"
           style={{
             transform: `scale(${zoomScale})`,
