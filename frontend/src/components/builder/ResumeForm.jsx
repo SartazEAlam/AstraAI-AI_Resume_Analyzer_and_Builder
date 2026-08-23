@@ -303,8 +303,14 @@ const ResumeForm = ({ data, onChange }) => {
 
           {/* SKILLS */}
           {activeTab === "skills" && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-black text-slate-900 dark:text-white mb-4">Technical Skills</h2>
+            <div className="space-y-5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white">Technical & Core Skills</h2>
+                <span className="text-xs font-semibold text-slate-400">
+                  {((Array.isArray(data.skills) ? data.skills : (typeof data.skills === 'string' ? data.skills.split(/[,;\n•|]+/).map(s => s.trim()).filter(Boolean) : []))).length} skills added
+                </span>
+              </div>
+
               <div className="flex gap-2">
                 <input
                   value={skillInput}
@@ -315,25 +321,51 @@ const ResumeForm = ({ data, onChange }) => {
                       addSkill();
                     }
                   }}
-                  placeholder="Type a skill and press Enter (e.g. React, Python)..."
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 text-sm font-medium focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                  placeholder="Type a skill and press Enter (e.g. React, Python, Docker)..."
+                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100 text-sm font-medium focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                 />
                 <button
                   onClick={addSkill}
                   disabled={!skillInput.trim()}
                   className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white text-sm font-bold transition-colors shadow-md shadow-indigo-500/20"
                 >
-                  Add
+                  Add Skill
                 </button>
               </div>
-              <div className="flex flex-wrap gap-2 pt-4">
+
+              {/* Quick Suggested Skill Chips */}
+              <div>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2">Suggested Skills (Click to add):</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {["React", "TypeScript", "JavaScript", "Python", "Node.js", "SQL", "Tailwind CSS", "Git", "Docker", "REST APIs", "AWS", "Agile / Scrum", "GraphQL", "Next.js", "Problem Solving", "Leadership"].map((suggested) => {
+                    const currentSkills = Array.isArray(data.skills) 
+                      ? data.skills 
+                      : (typeof data.skills === 'string' ? data.skills.split(/[,;\n•|]+/).map(s => s.trim()).filter(Boolean) : []);
+                    const isAdded = currentSkills.includes(suggested);
+                    if (isAdded) return null;
+                    return (
+                      <button
+                        key={suggested}
+                        onClick={() => {
+                          update("skills", [...currentSkills, suggested]);
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300 border border-slate-200 dark:border-slate-700 transition-all"
+                      >
+                        + {suggested}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 pt-2">
                 {((Array.isArray(data.skills) ? data.skills : (typeof data.skills === 'string' ? data.skills.split(/[,;\n•|]+/).map(s => s.trim()).filter(Boolean) : []))).map((skill, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-sm font-semibold border border-indigo-200 dark:border-indigo-800/50"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-sm font-semibold border border-indigo-200 dark:border-indigo-800/50 group"
                   >
                     {skill}
-                    <button onClick={() => removeSkill(i)} className="hover:text-rose-500 transition-colors ml-1">
+                    <button onClick={() => removeSkill(i)} className="hover:text-rose-500 transition-colors ml-1 opacity-70 group-hover:opacity-100">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </span>

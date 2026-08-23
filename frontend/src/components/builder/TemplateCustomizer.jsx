@@ -15,16 +15,18 @@ const ACCENT_COLORS = [
 ];
 
 const FONT_OPTIONS = [
-  { id: "inter", family: "'Inter', 'Segoe UI', sans-serif", label: "Inter" },
-  { id: "georgia", family: "'Georgia', 'Times New Roman', serif", label: "Georgia" },
-  { id: "outfit", family: "'Outfit', 'Inter', sans-serif", label: "Outfit" },
-  { id: "roboto-mono", family: "'Roboto Mono', 'Consolas', monospace", label: "Roboto Mono" },
+  { id: "inter", family: "'Inter', sans-serif", label: "Inter (Clean)" },
+  { id: "outfit", family: "'Outfit', sans-serif", label: "Outfit (Modern)" },
+  { id: "jakarta", family: "'Plus Jakarta Sans', sans-serif", label: "Jakarta (Geometric)" },
+  { id: "merriweather", family: "'Merriweather', serif", label: "Merriweather (Serif)" },
+  { id: "poppins", family: "'Poppins', sans-serif", label: "Poppins (Rounded)" },
+  { id: "roboto-mono", family: "'Roboto Mono', monospace", label: "Mono (Technical)" },
 ];
 
 const FONT_SIZES = [
-  { id: "small", label: "Small" },
-  { id: "default", label: "Default" },
-  { id: "large", label: "Large" },
+  { id: "small", label: "Small (Compact)" },
+  { id: "default", label: "Default (Standard)" },
+  { id: "large", label: "Large (Prominent)" },
 ];
 
 const TemplateCustomizer = ({ customization, onChange }) => {
