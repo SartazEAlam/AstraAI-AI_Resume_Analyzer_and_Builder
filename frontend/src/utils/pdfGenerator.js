@@ -239,27 +239,30 @@ export async function generateResumePDF(data, customization = {}) {
     if (isModern) {
       // Avatar
       const rad = s(26);
+      const cx = sideW / 2;
+      const cy = sidebarY - rad;
       if (page && pi.fullName) {
         const parts = pi.fullName.split(" ");
         let initials = (parts[0]?.[0] || "U").toUpperCase();
         if (parts.length > 1) initials += (parts[parts.length - 1]?.[0] || "").toUpperCase();
         
-        const cx = sideW / 2;
-        const cy = sidebarY - rad;
         page.drawCircle({ x: cx, y: cy, size: rad, color: whiteColor, opacity: 0.18 });
         const initW = fontBold.widthOfTextAtSize(initials, s(20));
-        drawT(initials, { x: cx - initW/2, yPos: cy - s(6), size: s(20), font: fontBold, color: whiteColor });
-      }
-      sidebarY -= rad * 2 + g(12);
-
-      // Name
-      if (pi.fullName) {
-        drawT(pi.fullName, { x: sideW/2, yPos: sidebarY, size: s(15), font: fontBold, color: whiteColor, align: "center", maxW: sideW - 20 });
-        sidebarY -= g(16);
+        drawT(initials, { x: cx - initW/2, yPos: cy - s(7), size: s(20), font: fontBold, color: whiteColor });
       }
       
-      drawLine(18, sidebarY, sideW - 18, 0.75, whiteColor);
-      sidebarY -= g(14);
+      // Name (Comfortable breathing room between circle bottom and text)
+      sidebarY = cy - rad - s(18);
+
+      if (pi.fullName) {
+        drawT(pi.fullName, { x: sideW/2, yPos: sidebarY, size: s(14), font: fontBold, color: whiteColor, align: "center", maxW: sideW - 20 });
+        sidebarY -= s(16);
+      }
+      
+      if (page) {
+        page.drawLine({ start: { x: 20, y: sidebarY }, end: { x: sideW - 20, y: sidebarY }, thickness: 0.75, color: whiteColor, opacity: 0.25 });
+      }
+      sidebarY -= s(16);
     } 
     else if (isClassic) {
       if (pi.fullName) {
