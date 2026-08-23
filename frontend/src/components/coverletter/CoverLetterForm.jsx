@@ -131,35 +131,47 @@ export default function CoverLetterForm({ formData, setFormData, onGenerate, isG
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Tone of Voice</label>
-              <div className="relative">
-                <select
-                  name="tone"
-                  value={formData.tone}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none appearance-none transition-all"
-                >
-                  {TONES.map(tone => (
-                    <option key={tone.id} value={tone.id}>{tone.label}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Tone of Voice</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {TONES.map(tone => (
+                  <button
+                    key={tone.id}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, tone: tone.id }))}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold text-left transition-all border ${
+                      formData.tone === tone.id
+                        ? "bg-indigo-50 dark:bg-indigo-900/40 border-indigo-500 text-indigo-700 dark:text-indigo-300"
+                        : "bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                    }`}
+                  >
+                    {tone.label.split(' ')[0]}
+                    <span className="block text-[10px] font-normal opacity-70">{tone.label.includes('(') ? tone.label.split('(')[1].replace(')', '') : ''}</span>
+                  </button>
+                ))}
               </div>
             </div>
+
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Text Alignment</label>
-              <div className="relative">
-                <select
-                  name="letterAlignment"
-                  value={formData.letterAlignment || 'left'}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none appearance-none transition-all"
-                >
-                  <option value="left">Left Align</option>
-                  <option value="center">Center</option>
-                  <option value="justify">Justify</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Text Alignment</label>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[
+                  { id: 'left', label: 'Left' },
+                  { id: 'center', label: 'Center' },
+                  { id: 'justify', label: 'Justify' }
+                ].map(align => (
+                  <button
+                    key={align.id}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, letterAlignment: align.id }))}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                      (formData.letterAlignment || 'left') === align.id
+                        ? "bg-indigo-50 dark:bg-indigo-900/40 border-indigo-500 text-indigo-700 dark:text-indigo-300"
+                        : "bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300"
+                    }`}
+                  >
+                    {align.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -169,35 +181,53 @@ export default function CoverLetterForm({ formData, setFormData, onGenerate, isG
         <button
           onClick={onGenerate}
           disabled={isGenerating || !formData.targetRole || !formData.targetCompany}
-          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+          className="w-full py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20"
         >
           {isGenerating ? (
             <>
               <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-              Generating...
+              Generating Cover Letter...
             </>
           ) : (
             <>
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 text-indigo-200" />
               Auto-Tailor with AI
             </>
           )}
         </button>
 
         {/* Letter Editor */}
-        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
-            <User className="w-4 h-4 text-slate-400" /> Letter Content
-          </h3>
+        <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <Mail className="w-4 h-4 text-indigo-500" /> Letter Content
+            </h3>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const sample = `Dear Hiring Team at ${formData.targetCompany || 'the Company'},\n\nI am writing to express my strong interest in the ${formData.targetRole || 'open'} position. With my background in high-impact software development and system architecture, I am confident in my ability to deliver substantial value to your engineering organization.\n\nThroughout my career, I have specialized in building scalable, resilient applications and collaborating closely with cross-functional teams to solve challenging technical problems. I admire ${formData.targetCompany || 'your team'}'s dedication to innovation and believe my skills align seamlessly with your current goals.\n\nThank you for your time and consideration. I welcome the opportunity to discuss how my qualifications meet your team's needs in greater detail.\n\nSincerely,\n${formData.name || 'Candidate'}`;
+                  setFormData(prev => ({ ...prev, letterContent: sample }));
+                }}
+                className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+              >
+                Insert Sample
+              </button>
+            </div>
+          </div>
           
           <div>
             <textarea
               name="letterContent"
               value={formData.letterContent}
               onChange={handleChange}
-              placeholder="Your cover letter content will appear here..."
-              className="w-full h-80 px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all resize-none font-mono leading-relaxed"
+              placeholder="Your cover letter content will appear here... (You can edit or type directly)"
+              className="w-full h-80 px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all resize-none leading-relaxed font-sans"
             />
+            <div className="flex justify-between items-center text-[11px] text-slate-400 mt-1 px-1">
+              <span>{(formData.letterContent || "").split(/\s+/).filter(Boolean).length} words</span>
+              <span>{(formData.letterContent || "").length} characters</span>
+            </div>
           </div>
         </div>
       </div>

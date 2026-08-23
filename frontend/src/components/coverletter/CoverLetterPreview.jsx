@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Download, FileText, Settings2, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Download, FileText, Settings2, ZoomIn, ZoomOut, Maximize2, Copy, Check } from 'lucide-react';
 import { generateCoverLetterPDF } from '../../utils/pdfGenerator';
 
 const TEMPLATES = [
@@ -9,37 +9,37 @@ const TEMPLATES = [
 ];
 
 const FONTS = [
-  { id: "'Inter', 'Segoe UI', sans-serif", label: "Inter (Clean)" },
-  { id: "'Outfit', 'Inter', sans-serif", label: "Outfit (Modern)" },
-  { id: "'Georgia', 'Times New Roman', serif", label: "Georgia (Serif)" },
+  { id: "'Inter', sans-serif", label: "Inter (Clean)" },
+  { id: "'Outfit', sans-serif", label: "Outfit (Modern)" },
+  { id: "'Plus Jakarta Sans', sans-serif", label: "Jakarta (Geometric)" },
+  { id: "'Merriweather', serif", label: "Merriweather (Serif)" },
+  { id: "'Poppins', sans-serif", label: "Poppins (Rounded)" },
   { id: "'Roboto Mono', monospace", label: "Mono (Technical)" }
 ];
 
 const SIZES = [
   { id: "small", label: "Small" },
-  { id: "default", label: "Standard" },
+  { id: "default", label: "Default" },
   { id: "large", label: "Large" }
 ];
 
 export default function CoverLetterPreview({ formData, customization, setCustomization }) {
   const [downloading, setDownloading] = useState(false);
-  const [scale, setScale] = useState(1);
+  const [copied, setCopied] = useState(false);
+  const [zoomScale, setZoomScale] = useState(0.48);
   const containerRef = useRef(null);
   const letterRef = useRef(null);
 
-  // Auto-scale the A4 preview to fit the container
+  // Auto-fit initial scale on load
   useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current && letterRef.current) {
-        const containerWidth = containerRef.current.clientWidth - 48; 
-        const a4Width = 794; 
-        const newScale = Math.min(1, containerWidth / a4Width);
-        setScale(newScale);
+    const handleAutoFit = () => {
+      if (containerRef.current) {
+        const availableW = containerRef.current.clientWidth - 48;
+        const fitZoom = Math.min(Math.max(availableW / 794, 0.35), 0.95);
+        setZoomScale(fitZoom);
       }
     };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    handleAutoFit();
   }, []);
 
   const handleCustomizationChange = (e) => {
@@ -69,22 +69,26 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(formData.letterContent);
-    alert("Cover Letter copied to clipboard!");
+    navigator.clipboard.writeText(formData.letterContent || "");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
+
+  // Font size scale multiplier
+  const sizeScale = customization.fontSize === 'small' ? 0.88 : customization.fontSize === 'large' ? 1.25 : 1.05;
 
   const getTemplateStyles = () => {
     switch(customization.templateId) {
       case 'modern':
         return {
-          container: "flex bg-white",
-          sidebar: `w-1/3 p-8 border-r-4 text-white`,
-          main: "w-2/3 p-8",
+          container: "flex bg-white min-h-[1123px]",
+          sidebar: `w-[260px] p-8 text-white flex-shrink-0`,
+          main: "flex-1 p-10",
           header: "border-b-2 pb-4 mb-6",
         };
       case 'minimal':
         return {
-          container: "bg-white p-12 text-left",
+          container: "bg-white p-14 text-left min-h-[1123px]",
           sidebar: "hidden",
           main: "w-full",
           header: "mb-8",
@@ -92,10 +96,10 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
       case 'classic':
       default:
         return {
-          container: "bg-white p-12",
+          container: "bg-white p-14 min-h-[1123px]",
           sidebar: "hidden",
           main: "w-full",
-          header: "border-b-2 pb-4 mb-8 text-center",
+          header: "border-b-2 pb-5 mb-8 text-center",
         };
     }
   };
@@ -105,15 +109,15 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
   return (
     <div className="h-full flex flex-col bg-slate-50 dark:bg-[#070b14] overflow-hidden">
       {/* Customization Toolbar */}
-      <div className="bg-white dark:bg-[#0b0f19] border-b border-slate-200 dark:border-slate-800 p-4 shrink-0 shadow-sm z-10 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="bg-white dark:bg-[#0b0f19] border-b border-slate-200 dark:border-slate-800 p-3.5 shrink-0 shadow-sm z-10 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <Settings2 className="w-4 h-4 text-slate-400" />
           
           <select 
             name="templateId" 
             value={customization.templateId} 
             onChange={handleCustomizationChange}
-            className="text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none rounded-md px-3 py-1.5 focus:ring-0 cursor-pointer"
+            className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
           >
             {TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label} Layout</option>)}
           </select>
@@ -122,7 +126,7 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
             name="fontFamily" 
             value={customization.fontFamily} 
             onChange={handleCustomizationChange}
-            className="text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none rounded-md px-3 py-1.5 focus:ring-0 cursor-pointer max-w-[120px]"
+            className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer max-w-[140px]"
           >
             {FONTS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
           </select>
@@ -131,13 +135,13 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
             name="fontSize" 
             value={customization.fontSize} 
             onChange={handleCustomizationChange}
-            className="hidden sm:block text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-none rounded-md px-3 py-1.5 focus:ring-0 cursor-pointer"
+            className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
           >
-            {SIZES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            {SIZES.map(s => <option key={s.id} value={s.id}>{s.label} Size</option>)}
           </select>
 
-          <div className="flex items-center gap-2 px-2 border-l border-slate-200 dark:border-slate-700">
-            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Accent</span>
+          <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Accent</span>
             <input 
               type="color" 
               name="accentColor" 
@@ -148,13 +152,44 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
           </div>
         </div>
 
+        {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Zoom Toolbar */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+            <button
+              onClick={() => setZoomScale((z) => Math.max(0.3, Number((z - 0.08).toFixed(2))))}
+              className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-all"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[11px] font-bold font-mono px-1.5 min-w-[38px] text-center text-slate-700 dark:text-slate-200">
+              {Math.round(zoomScale * 100)}%
+            </span>
+            <button
+              onClick={() => setZoomScale((z) => Math.min(1.2, Number((z + 0.08).toFixed(2))))}
+              className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-all"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setZoomScale(0.48)}
+              className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-slate-600 transition-all"
+              title="Fit to screen"
+            >
+              Fit
+            </button>
+          </div>
+
           <button 
             onClick={handleCopy}
-            className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
+            className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1"
           >
-            Copy Text
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? "Copied" : "Copy"}
           </button>
+          
           <button 
             onClick={handleExportPDF}
             disabled={downloading}
@@ -170,27 +205,27 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
       <div ref={containerRef} className="flex-1 overflow-y-auto p-6 flex justify-center items-start custom-scrollbar">
         <div 
           ref={letterRef}
-          className="shadow-xl ring-1 ring-black/5 bg-white transition-all transform origin-top"
+          className="shadow-2xl ring-1 ring-black/10 bg-white transition-all transform origin-top"
           style={{ 
             width: '794px', 
             minHeight: '1123px', 
-            transform: `scale(${scale})`, 
-            marginBottom: `${-(1 - scale) * 1123}px`,
+            transform: `scale(${zoomScale})`, 
+            marginBottom: `${-(1 - zoomScale) * 1123}px`,
             fontFamily: customization.fontFamily,
           }}
         >
-          <div className={`${styles.container} w-full h-full text-slate-800`}>
+          <div className={`${styles.container} w-full text-slate-800`}>
             
             {/* Sidebar (Modern Template Only) */}
             {customization.templateId === 'modern' && (
-              <div className={styles.sidebar} style={{ backgroundColor: customization.accentColor, borderColor: customization.accentColor }}>
-                <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold mb-6">
-                  {formData.name ? formData.name.split(' ').map(n => n[0]).join('') : 'C'}
+              <div className={styles.sidebar} style={{ backgroundColor: customization.accentColor }}>
+                <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold mb-6 mx-auto">
+                  {formData.name ? formData.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'C'}
                 </div>
-                <h1 className="text-2xl font-bold leading-tight mb-2">{formData.name || 'Your Name'}</h1>
-                <div className="w-8 h-1 bg-white/40 mb-6"></div>
-                <div className="space-y-4 text-sm text-white/90">
-                  {formData.email && <p>{formData.email}</p>}
+                <h1 className="text-xl font-bold leading-tight mb-2 text-center">{formData.name || 'Your Name'}</h1>
+                <div className="w-8 h-1 bg-white/40 mb-6 mx-auto"></div>
+                <div className="space-y-3 text-xs text-white/90">
+                  {formData.email && <p className="break-all">{formData.email}</p>}
                   {formData.phone && <p>{formData.phone}</p>}
                 </div>
               </div>
@@ -202,31 +237,34 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
               {/* Header (Classic & Minimal) */}
               {customization.templateId !== 'modern' && (
                 <div className={styles.header} style={customization.templateId === 'classic' ? { borderBottomColor: customization.accentColor } : {}}>
-                  <h1 className="text-4xl font-bold mb-2" style={{ color: customization.templateId === 'minimal' ? customization.accentColor : '#1e293b' }}>
+                  <h1 className="text-3xl font-black mb-2" style={{ color: customization.templateId === 'minimal' ? customization.accentColor : '#0f172a' }}>
                     {formData.name || 'Your Name'}
                   </h1>
-                  <p className="text-slate-500 font-medium tracking-wide">
-                    {formData.email || 'Email'} • {formData.phone || 'Phone'}
+                  <p className="text-slate-500 text-xs font-semibold tracking-wide">
+                    {[formData.email, formData.phone].filter(Boolean).join('   |   ')}
                   </p>
                 </div>
               )}
 
               {/* Letter Body */}
-              <div className="mt-8 space-y-6 text-sm leading-relaxed whitespace-pre-wrap text-slate-700">
+              <div 
+                className="mt-6 space-y-5 text-slate-700"
+                style={{ fontSize: `${14 * sizeScale}px`, lineHeight: 1.6 }}
+              >
                 {formData.date && (
-                  <p className="font-semibold text-slate-900">
+                  <p className="font-bold text-slate-900">
                     {new Date(formData.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
                   </p>
                 )}
                 
-                <div className="font-medium text-slate-800">
-                  {formData.hiringManager && <p>{formData.hiringManager}</p>}
-                  {formData.targetRole && <p>{formData.targetRole}</p>}
-                  {formData.targetCompany && <p>{formData.targetCompany}</p>}
-                  {formData.companyAddress && <p className="text-slate-600">{formData.companyAddress}</p>}
+                <div className="font-medium text-slate-800 space-y-0.5">
+                  {formData.hiringManager && <p className="font-bold">{formData.hiringManager}</p>}
+                  {formData.targetRole && <p className="font-semibold text-slate-900">{formData.targetRole}</p>}
+                  {formData.targetCompany && <p className="font-semibold">{formData.targetCompany}</p>}
+                  {formData.companyAddress && <p className="text-slate-500 text-xs">{formData.companyAddress}</p>}
                 </div>
 
-                <div className={`pt-2 ${
+                <div className={`pt-2 whitespace-pre-wrap ${
                   formData.letterAlignment === 'justify' ? 'text-justify' :
                   formData.letterAlignment === 'center' ? 'text-center' : 'text-left'
                 }`}>
@@ -241,3 +279,4 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
     </div>
   );
 }
+
