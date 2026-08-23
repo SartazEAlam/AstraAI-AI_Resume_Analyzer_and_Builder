@@ -19,7 +19,6 @@ const FONT_OPTIONS = [
   { id: "outfit", family: "'Outfit', sans-serif", label: "Outfit (Modern)" },
   { id: "jakarta", family: "'Plus Jakarta Sans', sans-serif", label: "Jakarta (Geometric)" },
   { id: "merriweather", family: "'Merriweather', serif", label: "Merriweather (Serif)" },
-  { id: "poppins", family: "'Poppins', sans-serif", label: "Poppins (Rounded)" },
   { id: "roboto-mono", family: "'Roboto Mono', monospace", label: "Mono (Technical)" },
 ];
 
