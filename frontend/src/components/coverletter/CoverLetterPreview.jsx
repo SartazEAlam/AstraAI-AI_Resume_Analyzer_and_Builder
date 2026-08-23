@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Download, FileText, Settings2, ZoomIn, ZoomOut, Maximize2, Copy, Check } from 'lucide-react';
+import { Download, FileText, Settings2, ZoomIn, ZoomOut, Maximize2, Copy, Check, Printer } from 'lucide-react';
 import { generateCoverLetterPDF } from '../../utils/pdfGenerator';
 
 const TEMPLATES = [
@@ -13,7 +13,6 @@ const FONTS = [
   { id: "'Outfit', sans-serif", label: "Outfit (Modern)" },
   { id: "'Plus Jakarta Sans', sans-serif", label: "Jakarta (Geometric)" },
   { id: "'Merriweather', serif", label: "Merriweather (Serif)" },
-  { id: "'Poppins', sans-serif", label: "Poppins (Rounded)" },
   { id: "'Roboto Mono', monospace", label: "Mono (Technical)" }
 ];
 
@@ -45,6 +44,10 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
   const handleCustomizationChange = (e) => {
     const { name, value } = e.target;
     setCustomization(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const handleExportPDF = async () => {
@@ -189,14 +192,14 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? "Copied" : "Copy"}
           </button>
-          
+
           <button 
             onClick={handleExportPDF}
             disabled={downloading}
-            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
           >
             {downloading ? <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            {downloading ? "Exporting..." : "Export PDF"}
+            {downloading ? "Generating..." : "Download PDF"}
           </button>
         </div>
       </div>
@@ -205,6 +208,7 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
       <div ref={containerRef} className="flex-1 overflow-y-auto p-6 flex justify-center items-start custom-scrollbar">
         <div 
           ref={letterRef}
+          id="cover-letter-printable-area"
           className="shadow-2xl ring-1 ring-black/10 bg-white transition-all transform origin-top"
           style={{ 
             width: '794px', 
