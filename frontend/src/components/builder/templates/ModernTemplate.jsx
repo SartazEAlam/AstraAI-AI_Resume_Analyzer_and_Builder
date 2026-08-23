@@ -192,10 +192,10 @@ const ModernTemplate = ({ data, customization }) => {
                   style={{
                     fontSize: 9 * sizeScale,
                     fontWeight: 600,
-                    padding: "3px 9px",
-                    borderRadius: 16,
-                    background: "rgba(255,255,255,0.12)",
-                    border: "1px solid rgba(255,255,255,0.2)",
+                    padding: "3px 11px",
+                    borderRadius: 9999,
+                    background: "rgba(255,255,255,0.15)",
+                    border: "1px solid rgba(255,255,255,0.25)",
                     color: "rgba(255,255,255,0.95)",
                     fontFamily,
                   }}
