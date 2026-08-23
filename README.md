@@ -13,11 +13,10 @@ Upload your resume in any format, select a target role or explore universal mark
 | **Multi-Format Support** | Seamless text extraction for **PDF, Word (DOCX/DOC), TXT, RTF, and Markdown** using `mammoth` and native stream parsers. |
 | **Interactive Resume Builder & Templates** | Build or edit resumes live using 3 professionally designed templates (**Classic, Modern, and Minimal**). |
 | **AI Cover Letter Generator** | Auto-tailor dynamic cover letters with custom Tone (Professional, Enthusiastic, etc.), Text Alignment (Justify, Center, Left), and precise Company/Hiring Manager Details. Exports to perfectly matched A4 PDFs. |
-| **1-Click ATS-Compliant PDF Export** | Uses a pixel-perfect, custom coordinate-based `pdf-lib` rendering engine on the client to generate high-fidelity vector PDFs (100% ATS-compliant text runs) and dynamically fit them to a single A4 page. |
+| **Cross-Platform ATS-Compliant PDF Engine** | Uses a custom `pdf-lib` vector rendering engine with ISO 32000 standard typography (Helvetica, Times, Courier) for 100% ATS text extractability, zero Adobe Acrobat errors, and guaranteed single-page auto-fitting. |
 | **Cascading Job Selector & Custom JDs** | Filter by Industry Sector, select a Specific Job Role, or **Paste a Custom Job Description** for on-the-fly keyword extraction. |
 | **Hybrid ATS Match Engine** | Blends direct technical skill overlap with **AI Semantic Concept Matching** (`sentence-transformers`) for realistic ATS grading and fewer false negatives. |
 | **Live In-Browser Resume Editor** | Iteratively refine your extracted resume text and re-run the ATS evaluation instantaneously without re-uploading PDFs. |
-| **AI Bullet Point Enhancer** | Automatically rewrites weak verbs with strong executive action verbs and intelligently injects placeholder metrics to boost your resume's STAR impact. |
 | **Dual General & Global Market Fit** | When no specific job is chosen, calculates both **Primary Domain Best Fit** (0–100%) and **Global Multi-Sector Market Fit** across 54+ industry roles. |
 | **Experience & Seniority Parsing** | Automatically extracts total years of experience, inferred seniority level, and previous job titles with company and date ranges. |
 | **Dual Mode UI** | **Individual Mode** for self-assessment, and **Organization Dashboard** for recruiters to bulk upload, rank, and evaluate candidate pools. |
@@ -96,8 +95,8 @@ AI_Resume_Analyzer/
 ### 0. Clone the Repository
 
 ```bash
-git clone https://github.com/SartazEAlam/AstraAI-AI_Resume_Analyzer.git
-cd AstraAI-AI_Resume_Analyzer
+git clone https://github.com/SartazEAlam/AstraAI-AI_Resume_Analyzer_and_Builder.git
+cd AstraAI-AI_Resume_Analyzer_and_Builder
 ```
 
 ### Prerequisites
