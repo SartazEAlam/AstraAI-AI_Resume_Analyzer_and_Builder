@@ -1,6 +1,9 @@
 import ClassicTemplate from "./ClassicTemplate";
 import ModernTemplate from "./ModernTemplate";
 import MinimalTemplate from "./MinimalTemplate";
+import ExecutiveTemplate from "./ExecutiveTemplate";
+import CompactTemplate from "./CompactTemplate";
+import ProfessionalTemplate from "./ProfessionalTemplate";
 
 const TEMPLATES = [
   {
@@ -23,6 +26,27 @@ const TEMPLATES = [
     description: "Whitespace-first layout with sharp typographic hierarchy. Ideal for design and finance.",
     component: MinimalTemplate,
     tags: ["Clean", "Elegant"],
+  },
+  {
+    id: "executive",
+    name: "Executive",
+    description: "Bold dark header banner with prominent name. Built for senior roles and leadership.",
+    component: ExecutiveTemplate,
+    tags: ["Leadership", "Bold"],
+  },
+  {
+    id: "compact",
+    name: "Compact",
+    description: "Dense two-column layout packing maximum content. Perfect for engineers and data scientists.",
+    component: CompactTemplate,
+    tags: ["Dense", "Technical"],
+  },
+  {
+    id: "professional",
+    name: "Professional",
+    description: "Structured left-aligned layout with accent bars. Universally ATS-compatible and clean.",
+    component: ProfessionalTemplate,
+    tags: ["Universal", "ATS-Safe"],
   },
 ];
 
