@@ -5,7 +5,9 @@ import { generateCoverLetterPDF } from '../../utils/pdfGenerator';
 const TEMPLATES = [
   { id: 'classic', label: 'Classic' },
   { id: 'modern', label: 'Modern' },
-  { id: 'minimal', label: 'Minimal' }
+  { id: 'minimal', label: 'Minimal' },
+  { id: 'executive', label: 'Executive' },
+  { id: 'professional', label: 'Professional' }
 ];
 
 const FONTS = [
@@ -95,6 +97,22 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
           sidebar: "hidden",
           main: "w-full",
           header: "mb-8",
+        };
+      case 'executive':
+        return {
+          container: "bg-white min-h-[1123px]",
+          sidebar: "hidden",
+          main: "w-full",
+          header: "text-center text-white py-10 px-14",
+          headerBg: true,
+        };
+      case 'professional':
+        return {
+          container: "bg-white p-14 min-h-[1123px]",
+          sidebar: "hidden",
+          main: "w-full",
+          header: "pb-5 mb-8 flex justify-between items-start flex-wrap",
+          headerBorder: true,
         };
       case 'classic':
       default:
@@ -235,18 +253,51 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
               </div>
             )}
 
+            {/* Executive Header (Dark Banner) */}
+            {customization.templateId === 'executive' && (
+              <div className={styles.header} style={{ backgroundColor: customization.accentColor }}>
+                <h1 className="text-3xl font-black mb-2 uppercase tracking-wider">{formData.name || 'Your Name'}</h1>
+                <p className="text-white/80 text-xs font-semibold tracking-wide">
+                  {[formData.email, formData.phone].filter(Boolean).join('   |   ')}
+                </p>
+              </div>
+            )}
+
             {/* Main Content Area */}
-            <div className={styles.main}>
+            <div className={styles.main} style={customization.templateId === 'executive' ? { padding: '32px 56px' } : {}}>
               
-              {/* Header (Classic & Minimal) */}
-              {customization.templateId !== 'modern' && (
-                <div className={styles.header} style={customization.templateId === 'classic' ? { borderBottomColor: customization.accentColor } : {}}>
-                  <h1 className="text-3xl font-black mb-2" style={{ color: customization.templateId === 'minimal' ? customization.accentColor : '#0f172a' }}>
-                    {formData.name || 'Your Name'}
-                  </h1>
-                  <p className="text-slate-500 text-xs font-semibold tracking-wide">
-                    {[formData.email, formData.phone].filter(Boolean).join('   |   ')}
-                  </p>
+              {/* Header (Classic, Minimal, Professional) */}
+              {!['modern', 'executive'].includes(customization.templateId) && (
+                <div 
+                  className={styles.header} 
+                  style={
+                    customization.templateId === 'classic' ? { borderBottomColor: customization.accentColor } : 
+                    customization.templateId === 'professional' ? { borderBottom: `2px solid ${customization.accentColor}` } : 
+                    {}
+                  }
+                >
+                  {customization.templateId === 'professional' ? (
+                    <>
+                      <div>
+                        <h1 className="text-3xl font-black mb-1" style={{ color: '#0f172a' }}>
+                          {formData.name || 'Your Name'}
+                        </h1>
+                      </div>
+                      <div className="text-right text-xs text-slate-500 font-medium leading-relaxed">
+                        {formData.email && <p>{formData.email}</p>}
+                        {formData.phone && <p>{formData.phone}</p>}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <h1 className="text-3xl font-black mb-2" style={{ color: customization.templateId === 'minimal' ? customization.accentColor : '#0f172a' }}>
+                        {formData.name || 'Your Name'}
+                      </h1>
+                      <p className="text-slate-500 text-xs font-semibold tracking-wide">
+                        {[formData.email, formData.phone].filter(Boolean).join('   |   ')}
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
