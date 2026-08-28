@@ -11,8 +11,8 @@ Upload your resume in any format, select a target role or explore universal mark
 | Feature | Description |
 |---|---|
 | **Multi-Format Support** | Seamless text extraction for **PDF, Word (DOCX/DOC), TXT, RTF, and Markdown** using `mammoth` and native stream parsers. |
-| **Interactive Resume Builder & Templates** | Build or edit resumes live using 3 professionally designed templates (**Classic, Modern, and Minimal**). |
-| **AI Cover Letter Generator** | Auto-tailor dynamic cover letters with custom Tone (Professional, Enthusiastic, etc.), Text Alignment (Justify, Center, Left), and precise Company/Hiring Manager Details. Exports to perfectly matched A4 PDFs. |
+| **Interactive Resume Builder & Templates** | Build or edit resumes live using 6 professionally designed ATS templates (**Classic, Modern, Minimal, Executive, Compact, and Professional**) with 14 curated typography styles. |
+| **AI Cover Letter Generator** | Auto-tailor dynamic cover letters across 5 template styles (**Classic, Modern, Minimal, Executive, and Professional**) with custom Tone, Text Alignment, and Company/Hiring Manager Details. Exports to perfectly matched A4 PDFs. |
 | **Cross-Platform ATS-Compliant PDF Engine** | Uses a custom `pdf-lib` vector rendering engine with ISO 32000 standard typography (Helvetica, Times, Courier) for 100% ATS text extractability, zero Adobe Acrobat errors, and guaranteed single-page auto-fitting. |
 | **Cascading Job Selector & Custom JDs** | Filter by Industry Sector, select a Specific Job Role, or **Paste a Custom Job Description** for on-the-fly keyword extraction. |
 | **Hybrid ATS Match Engine** | Blends direct technical skill overlap with **AI Semantic Concept Matching** (`sentence-transformers`) for realistic ATS grading and fewer false negatives. |
@@ -256,7 +256,7 @@ ML_SERVICE_URL=http://localhost:8000
 7. **Client-Side Pixel-Perfect PDF Engine**
    - **High-Fidelity Rendering**: Directly draws vector text runs via `pdf-lib` in the browser, producing 100% extractable, ATS-friendly text layers.
    - **Typographic Auto-Fitter**: Loops dynamically to fine-tune spacing, margins, and font scaling to perfectly compress/expand resume content to exactly one page, eliminating overlaps.
-   - **Modern Aesthetic Alignment**: Features a 3-archetype template engine matching layout proportions, font families, circular avatars, and pill-tags between the HTML builder and the PDF document.
+   - **Modern Aesthetic Alignment**: Features a 6-template vector engine matching layout proportions, font families, circular avatars, and pill-tags between the HTML builder and the PDF document.
 
 ---
 
