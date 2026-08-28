@@ -118,14 +118,14 @@ const CompactTemplate = ({ data, customization }) => {
       </div>
 
       {/* ── Two-Column Body ── */}
-      <div style={{ display: "flex", padding: "18px 32px 28px" }}>
-        {/* Left: Main Content (65%) */}
-        <div style={{ flex: "0 0 63%", paddingRight: 22, display: "flex", flexDirection: "column", gap: mainGap }}>
+      <div style={{ display: "flex", padding: "16px 28px 24px" }}>
+        {/* Left: Main Content (62%) */}
+        <div style={{ flex: "0 0 62%", paddingRight: 18, display: "flex", flexDirection: "column", gap: mainGap }}>
           {/* Summary */}
           {summary && (
             <div>
               <SectionTitle>Summary</SectionTitle>
-              <p style={{ fontSize: 10 * sizeScale, lineHeight: 1.6, color: "#374151", margin: 0, fontFamily }}>{summary}</p>
+              <p style={{ fontSize: 9.5 * sizeScale, lineHeight: 1.55, color: "#374151", margin: 0, fontFamily }}>{summary}</p>
             </div>
           )}
 
@@ -133,22 +133,22 @@ const CompactTemplate = ({ data, customization }) => {
           {experience.length > 0 && (
             <div>
               <SectionTitle>Experience</SectionTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 * sizeScale }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 * sizeScale }}>
                 {experience.map((exp, i) => (
                   <div key={i}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap" }}>
-                      <h3 style={{ fontSize: 11.5 * sizeScale, fontWeight: 700, color: "#111827", margin: 0, fontFamily }}>{exp.title || "Position"}</h3>
-                      <span style={{ fontSize: 9 * sizeScale, color: "#9ca3af", fontFamily, fontWeight: 500, fontStyle: "italic" }}>{[exp.startDate, exp.endDate].filter(Boolean).join(" – ")}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4 }}>
+                      <h3 style={{ fontSize: 11 * sizeScale, fontWeight: 700, color: "#111827", margin: 0, fontFamily }}>{exp.title || "Position"}</h3>
+                      <span style={{ fontSize: 8.5 * sizeScale, color: "#9ca3af", fontFamily, fontWeight: 500, fontStyle: "italic" }}>{[exp.startDate, exp.endDate].filter(Boolean).join(" – ")}</span>
                     </div>
                     {exp.company && (
-                      <p style={{ fontSize: 10 * sizeScale, color: "#6b7280", fontStyle: "italic", margin: "1px 0 0", fontFamily, fontWeight: 500 }}>
+                      <p style={{ fontSize: 9.5 * sizeScale, color: accent, fontStyle: "italic", margin: "1px 0 0", fontFamily, fontWeight: 500 }}>
                         {exp.company}{exp.location ? ` · ${exp.location}` : ""}
                       </p>
                     )}
                     {exp.bullets?.length > 0 && (
-                      <ul style={{ margin: "4px 0 0", paddingLeft: 14, listStyleType: "disc" }}>
+                      <ul style={{ margin: "3px 0 0", paddingLeft: 14, listStyleType: "disc" }}>
                         {exp.bullets.map((b, j) => b.trim() ? (
-                          <li key={j} style={{ fontSize: 9.5 * sizeScale, lineHeight: 1.55, color: "#374151", marginBottom: 1, fontFamily }}>{b}</li>
+                          <li key={j} style={{ fontSize: 9 * sizeScale, lineHeight: 1.5, color: "#374151", marginBottom: 1, fontFamily }}>{b}</li>
                         ) : null)}
                       </ul>
                     )}
@@ -165,11 +165,11 @@ const CompactTemplate = ({ data, customization }) => {
               <div style={{ display: "flex", flexDirection: "column", gap: 8 * sizeScale }}>
                 {education.map((edu, i) => (
                   <div key={i}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap" }}>
-                      <h3 style={{ fontSize: 11 * sizeScale, fontWeight: 700, color: "#111827", margin: 0, fontFamily }}>{edu.degree || "Degree"}</h3>
-                      <span style={{ fontSize: 9 * sizeScale, color: "#9ca3af", fontFamily, fontStyle: "italic" }}>{edu.year || ""}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4 }}>
+                      <h3 style={{ fontSize: 10.5 * sizeScale, fontWeight: 700, color: "#111827", margin: 0, fontFamily }}>{edu.degree || "Degree"}</h3>
+                      <span style={{ fontSize: 8.5 * sizeScale, color: "#9ca3af", fontFamily, fontStyle: "italic" }}>{edu.year || ""}</span>
                     </div>
-                    <p style={{ fontSize: 10 * sizeScale, color: "#6b7280", margin: "1px 0 0", fontFamily }}>
+                    <p style={{ fontSize: 9.5 * sizeScale, color: "#6b7280", margin: "1px 0 0", fontFamily }}>
                       {edu.institution || ""}{edu.gpa ? ` · GPA: ${edu.gpa}` : ""}
                     </p>
                   </div>
@@ -182,15 +182,15 @@ const CompactTemplate = ({ data, customization }) => {
           {projects.length > 0 && (
             <div>
               <SectionTitle>Projects</SectionTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 * sizeScale }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 * sizeScale }}>
                 {projects.map((proj, i) => (
                   <div key={i}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-                      <h3 style={{ fontSize: 11 * sizeScale, fontWeight: 700, color: "#111827", margin: 0, fontFamily }}>{proj.name || "Project"}</h3>
-                      {proj.techStack && <span style={{ fontSize: 8.5 * sizeScale, color: accent, fontFamily, fontWeight: 600 }}>({proj.techStack})</span>}
+                      <h3 style={{ fontSize: 10.5 * sizeScale, fontWeight: 700, color: "#111827", margin: 0, fontFamily }}>{proj.name || "Project"}</h3>
+                      {proj.techStack && <span style={{ fontSize: 8 * sizeScale, color: accent, fontFamily, fontWeight: 600 }}>({proj.techStack})</span>}
                     </div>
-                    {proj.description && <p style={{ fontSize: 9.5 * sizeScale, color: "#374151", margin: "2px 0 0", lineHeight: 1.55, fontFamily }}>{proj.description}</p>}
-                    {proj.link && <a href={proj.link} style={{ fontSize: 8.5 * sizeScale, color: accent, fontFamily, textDecoration: "none", borderBottom: `1px solid ${accent}44` }} target="_blank" rel="noopener noreferrer">{proj.link}</a>}
+                    {proj.description && <p style={{ fontSize: 9 * sizeScale, color: "#374151", margin: "2px 0 0", lineHeight: 1.5, fontFamily }}>{proj.description}</p>}
+                    {proj.link && <a href={proj.link} style={{ fontSize: 8 * sizeScale, color: accent, fontFamily, textDecoration: "none", borderBottom: `1px solid ${accent}44` }} target="_blank" rel="noopener noreferrer">{proj.link}</a>}
                   </div>
                 ))}
               </div>
@@ -198,11 +198,11 @@ const CompactTemplate = ({ data, customization }) => {
           )}
         </div>
 
-        {/* Right: Sidebar (35%) */}
+        {/* Right: Sidebar (38%) */}
         <div
           style={{
-            flex: "0 0 37%",
-            paddingLeft: 20,
+            flex: "0 0 38%",
+            paddingLeft: 18,
             borderLeft: `1.5px solid #e5e7eb`,
             display: "flex",
             flexDirection: "column",
@@ -213,7 +213,7 @@ const CompactTemplate = ({ data, customization }) => {
           {normalizedSkills.length > 0 && (
             <div>
               <SideTitle>Technical Skills</SideTitle>
-              <p style={{ fontSize: 9.5 * sizeScale, color: "#374151", lineHeight: 1.7, fontFamily, margin: 0 }}>
+              <p style={{ fontSize: 9 * sizeScale, color: "#374151", lineHeight: 1.65, fontFamily, margin: 0 }}>
                 {normalizedSkills.join(", ")}
               </p>
             </div>
@@ -223,12 +223,12 @@ const CompactTemplate = ({ data, customization }) => {
           {certifications.length > 0 && (
             <div>
               <SideTitle>Certifications</SideTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 {certifications.map((cert, i) => (
                   <div key={i}>
-                    <span style={{ fontSize: 9.5 * sizeScale, fontWeight: 600, color: "#111827", fontFamily, display: "block", lineHeight: 1.35 }}>{cert.name}</span>
+                    <span style={{ fontSize: 9 * sizeScale, fontWeight: 600, color: "#111827", fontFamily, display: "block", lineHeight: 1.3 }}>{cert.name}</span>
                     {(cert.issuer || cert.year) && (
-                      <span style={{ fontSize: 8.5 * sizeScale, color: "#9ca3af", fontFamily }}>
+                      <span style={{ fontSize: 8 * sizeScale, color: "#9ca3af", fontFamily }}>
                         {[cert.issuer, cert.year].filter(Boolean).join(" · ")}
                       </span>
                     )}
@@ -242,11 +242,11 @@ const CompactTemplate = ({ data, customization }) => {
           {languages.length > 0 && (
             <div>
               <SideTitle>Languages</SideTitle>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3.5 }}>
                 {languages.map((l, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: 9.5 * sizeScale, color: "#374151", fontFamily, fontWeight: 500 }}>{l.language}</span>
-                    {l.proficiency && <span style={{ fontSize: 8.5 * sizeScale, color: "#9ca3af", fontFamily }}>{l.proficiency}</span>}
+                    <span style={{ fontSize: 9 * sizeScale, color: "#374151", fontFamily, fontWeight: 500 }}>{l.language}</span>
+                    {l.proficiency && <span style={{ fontSize: 8 * sizeScale, color: "#9ca3af", fontFamily }}>{l.proficiency}</span>}
                   </div>
                 ))}
               </div>
