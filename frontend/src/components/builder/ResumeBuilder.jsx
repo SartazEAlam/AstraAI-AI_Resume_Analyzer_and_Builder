@@ -135,48 +135,54 @@ const ResumeBuilder = ({ theme, onAnalyzeResume }) => {
         </p>
       </motion.div>
 
-      {/* ── Template Selector Strip ── */}
+      {/* ── Compact Template Selector Bar (No horizontal slider needed) ── */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="mb-6"
+        className="mb-5"
       >
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 builder-form-scrollbar">
-          {TEMPLATES.map((tmpl) => (
-            <button
-              key={tmpl.id}
-              onClick={() => handleTemplateSelect(tmpl.id)}
-              className={`flex-shrink-0 group relative rounded-2xl border-2 transition-all p-3 min-w-[160px] text-left ${
-                customization.templateId === tmpl.id
-                  ? "border-indigo-500 dark:border-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 shadow-lg shadow-indigo-500/10"
-                  : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-indigo-300 dark:hover:border-indigo-600 hover:shadow-md"
-              }`}
-            >
-              {customization.templateId === tmpl.id && (
-                <div className="absolute top-2 right-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                </div>
-              )}
-              <div className="flex items-center gap-2 mb-1.5">
-                <LayoutTemplate className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                <span className="text-sm font-bold text-slate-900 dark:text-white">{tmpl.name}</span>
-              </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed line-clamp-2">
-                {tmpl.description}
-              </p>
-              <div className="flex gap-1.5 mt-2">
-                {tmpl.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </button>
-          ))}
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+            {TEMPLATES.map((tmpl) => {
+              const isSelected = customization.templateId === tmpl.id;
+              return (
+                <button
+                  key={tmpl.id}
+                  onClick={() => handleTemplateSelect(tmpl.id)}
+                  className={`group relative flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left ${
+                    isSelected
+                      ? "border-indigo-500 dark:border-indigo-400 bg-indigo-50/90 dark:bg-indigo-950/60 shadow-sm text-indigo-700 dark:text-indigo-300"
+                      : "border-transparent bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected
+                          ? "bg-indigo-600 text-white"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400"
+                      }`}
+                    >
+                      <LayoutTemplate className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold truncate">{tmpl.name}</span>
+                      </div>
+                      <span className="text-[9px] font-medium text-slate-400 dark:text-slate-500 block truncate">
+                        {tmpl.tags?.[0] || "ATS"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {isSelected && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0 ml-1" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </motion.div>
 
@@ -203,6 +209,11 @@ const ResumeBuilder = ({ theme, onAnalyzeResume }) => {
                 <Settings2 className="w-3.5 h-3.5" />
                 Customize Style
               </button>
+
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                <span className="text-slate-400">Template:</span>
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">{selectedTemplate.name}</span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {saveStatus === "saved" && (
