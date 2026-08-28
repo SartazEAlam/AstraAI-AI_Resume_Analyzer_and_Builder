@@ -125,7 +125,7 @@ const ResumeBuilder = ({ theme, onAnalyzeResume }) => {
       >
         <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-50 dark:bg-purple-950/50 border border-purple-300 dark:border-purple-800 text-xs font-bold text-purple-900 dark:text-purple-200 tracking-wide mb-4 shadow-sm">
           <Sparkles className="w-3.5 h-3.5" />
-          AI-Powered Resume Builder · 3 Premium Templates
+          AI-Powered Resume Builder · 6 Premium Templates
         </span>
         <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900 dark:text-white mb-2">
           Build Your <span className="text-indigo-600 dark:text-indigo-400">Perfect Resume</span>
