@@ -11,11 +11,23 @@ const TEMPLATES = [
 ];
 
 const FONTS = [
+  // Sans-Serif
   { id: "'Inter', sans-serif", label: "Inter (Clean)" },
+  { id: "'Roboto', sans-serif", label: "Roboto (ATS Standard)" },
+  { id: "'Plus Jakarta Sans', sans-serif", label: "Plus Jakarta (Geometric)" },
   { id: "'Outfit', sans-serif", label: "Outfit (Modern)" },
-  { id: "'Plus Jakarta Sans', sans-serif", label: "Jakarta (Geometric)" },
-  { id: "'Merriweather', serif", label: "Merriweather (Serif)" },
-  { id: "'Roboto Mono', monospace", label: "Mono (Technical)" }
+  { id: "'Poppins', sans-serif", label: "Poppins (Contemporary)" },
+  { id: "'Montserrat', sans-serif", label: "Montserrat (Bold)" },
+  { id: "'Lato', sans-serif", label: "Lato (Corporate)" },
+  { id: "'Open Sans', sans-serif", label: "Open Sans (Neutral)" },
+  // Serif
+  { id: "'Merriweather', serif", label: "Merriweather (Editorial)" },
+  { id: "'Lora', serif", label: "Lora (Classic)" },
+  { id: "'Playfair Display', serif", label: "Playfair Display (Luxury)" },
+  { id: "'Georgia', serif", label: "Georgia (Formal)" },
+  // Monospace
+  { id: "'Roboto Mono', monospace", label: "Roboto Mono (Developer)" },
+  { id: "'JetBrains Mono', monospace", label: "JetBrains Mono (Code)" }
 ];
 
 const SIZES = [
