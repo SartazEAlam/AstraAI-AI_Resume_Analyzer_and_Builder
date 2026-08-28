@@ -87,7 +87,14 @@ async function loadFontFamily(pdfDoc, customFont) {
   const fontStr = (customFont || "").toLowerCase();
   
   // 1. Technical Monospace
-  if (fontStr.includes("roboto mono") || fontStr.includes("mono") || fontStr.includes("consolas") || fontStr.includes("courier")) {
+  if (
+    fontStr.includes("mono") ||
+    fontStr.includes("jetbrains") ||
+    fontStr.includes("consolas") ||
+    fontStr.includes("courier") ||
+    fontStr.includes("fira") ||
+    fontStr.includes("code")
+  ) {
     return {
       fontRegular: await pdfDoc.embedFont(StandardFonts.Courier),
       fontBold: await pdfDoc.embedFont(StandardFonts.CourierBold),
@@ -95,8 +102,18 @@ async function loadFontFamily(pdfDoc, customFont) {
     };
   }
   
-  // 2. Editorial Serif
-  if (fontStr.includes("georgia") || fontStr.includes("times") || fontStr.includes("merriweather") || (fontStr.includes("serif") && !fontStr.includes("sans-serif"))) {
+  // 2. Editorial / Classic Serif
+  if (
+    fontStr.includes("georgia") ||
+    fontStr.includes("times") ||
+    fontStr.includes("merriweather") ||
+    fontStr.includes("lora") ||
+    fontStr.includes("playfair") ||
+    fontStr.includes("garamond") ||
+    fontStr.includes("baskerville") ||
+    fontStr.includes("cambria") ||
+    (fontStr.includes("serif") && !fontStr.includes("sans-serif"))
+  ) {
     return {
       fontRegular: await pdfDoc.embedFont(StandardFonts.TimesRoman),
       fontBold: await pdfDoc.embedFont(StandardFonts.TimesRomanBold),
@@ -104,7 +121,7 @@ async function loadFontFamily(pdfDoc, customFont) {
     };
   }
 
-  // 3. Modern / Clean Sans-Serif (Default: Inter, Outfit, Jakarta, Helvetica)
+  // 3. Modern / Clean Sans-Serif (Default: Inter, Roboto, Plus Jakarta Sans, Outfit, Poppins, Montserrat, Lato, Open Sans, Helvetica)
   return {
     fontRegular: await pdfDoc.embedFont(StandardFonts.Helvetica),
     fontBold: await pdfDoc.embedFont(StandardFonts.HelveticaBold),
