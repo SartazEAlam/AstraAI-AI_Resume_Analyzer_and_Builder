@@ -175,13 +175,16 @@ export async function generateResumePDF(data, customization = {}) {
     if (!isModern && !isClassic && !isMinimal && !isExecutive && !isCompact && !isProfessional) isClassic = true;
 
     const hasSidebar = isModern || isCompact;
-    const sideW = isModern ? 190 : isCompact ? 195 : 0;
-    const marginX = isDense ? 36 : MARGIN_X;
-    const marginTop = isDense ? 32 : MARGIN_TOP;
-    const marginBottom = isDense ? 26 : MARGIN_BOTTOM;
+    const sideW = isModern ? 190 : isCompact ? 180 : 0;
+    const marginX = isDense ? 34 : MARGIN_X;
+    const marginTop = isDense ? 30 : MARGIN_TOP;
+    const marginBottom = isDense ? 24 : MARGIN_BOTTOM;
 
-    const mainX = isModern ? sideW + 20 : isCompact ? marginX : marginX;
-    const mainW = isModern ? PAGE_WIDTH - mainX - 20 : isCompact ? PAGE_WIDTH - marginX - sideW - 18 : PAGE_WIDTH - marginX * 2;
+    const mainX = isModern ? sideW + 20 : marginX;
+    const mainW = isModern ? PAGE_WIDTH - mainX - 20 : isCompact ? PAGE_WIDTH - marginX * 2 - sideW - 16 : PAGE_WIDTH - marginX * 2;
+    const dividerX = isCompact ? mainX + mainW + 8 : 0;
+    const sideX = isCompact ? dividerX + 8 : 18;
+    const sideContentW = isCompact ? PAGE_WIDTH - marginX - sideX : sideW - 36;
 
     let y = PAGE_HEIGHT - marginTop;
     let sidebarY = PAGE_HEIGHT - marginTop;
@@ -312,25 +315,28 @@ export async function generateResumePDF(data, customization = {}) {
     else if (isCompact) {
       // Compact: Name left, contact right, accent line below
       if (pi.fullName) {
-        drawT(pi.fullName, { x: marginX, yPos: y, size: s(20), font: fontBold, color: darkCharcoal });
+        drawT(pi.fullName, { x: marginX, yPos: y, size: s(19), font: fontBold, color: darkCharcoal, maxW: PAGE_WIDTH - marginX * 2 - 180 });
       }
       
       const contactRight = [pi.email, pi.phone, pi.location].filter(Boolean);
       let rightY = y;
       for (const item of contactRight) {
-        drawT(item, { x: PAGE_WIDTH - marginX, yPos: rightY, size: s(8), font: fontRegular, color: grayColor, align: "right" });
-        rightY -= s(11);
+        drawT(item, { x: PAGE_WIDTH - marginX, yPos: rightY, size: s(7.5), font: fontRegular, color: grayColor, align: "right", maxW: 175 });
+        rightY -= s(10);
       }
-      y -= s(20) + g(4);
+      y -= s(19) + g(3);
 
       const linkLine = [pi.linkedin, pi.portfolio].filter(Boolean).join("   ·   ");
       if (linkLine) {
-        drawT(linkLine, { x: marginX, yPos: y, size: s(8), font: fontRegular, color: accentColor });
-        y -= s(8) + g(4);
+        drawT(linkLine, { x: marginX, yPos: y, size: s(7.5), font: fontRegular, color: accentColor, maxW: mainW });
+        y -= s(7.5) + g(3);
       }
 
       drawLine(marginX, y, PAGE_WIDTH - marginX, 2, accentColor);
-      y -= g(12);
+      y -= g(10);
+
+      // CRITICAL: Sidebar starts BELOW header line!
+      sidebarY = y;
     }
     else if (isProfessional) {
       // Professional: Name left, contact right, accent border
@@ -424,14 +430,14 @@ export async function generateResumePDF(data, customization = {}) {
       else if (isCompact) {
         if (inSidebar) {
           drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(8.5), font: fontBold, color: accentColor });
-          currentY -= s(5);
+          currentY -= s(4.5);
           if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 1, color: veryLightGray });
           return currentY - s(8);
         } else {
           drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(9.5), font: fontBold, color: accentColor });
           currentY -= s(5);
           if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 1, color: veryLightGray });
-          return currentY - s(10);
+          return currentY - s(9);
         }
       }
       else if (isProfessional) {
@@ -542,20 +548,17 @@ export async function generateResumePDF(data, customization = {}) {
 
     // COMPACT RIGHT SIDEBAR SECTIONS
     if (isCompact) {
-      const sideX = PAGE_WIDTH - marginX - sideW + 18;
-      const sideContentW = sideW - 36;
-      
       // Vertical divider line
-      if (page) page.drawLine({ start: { x: sideX - 10, y: sidebarY }, end: { x: sideX - 10, y: marginBottom }, thickness: 0.75, color: lightGray });
+      if (page) page.drawLine({ start: { x: dividerX, y: sidebarY + s(4) }, end: { x: dividerX, y: marginBottom }, thickness: 0.75, color: lightGray });
 
       // 1. Technical Skills (plain comma-separated for max ATS compatibility)
       if (skills.length > 0) {
         sidebarY = drawSectionTitle("Technical Skills", sidebarY, sideX, sideContentW, true);
         const skillText = skills.join(", ");
         const consumedSkills = drawWrapped(skillText, {
-          x: sideX, yPos: sidebarY, w: sideContentW, font: fontRegular, size: s(7.5), color: darkCharcoal, lineHeight: 1.45
+          x: sideX, yPos: sidebarY, w: sideContentW, font: fontRegular, size: s(7.5), color: darkCharcoal, lineHeight: 1.40
         });
-        sidebarY -= consumedSkills + s(14);
+        sidebarY -= consumedSkills + s(10);
       }
 
       // 2. Certifications
@@ -571,12 +574,12 @@ export async function generateResumePDF(data, customization = {}) {
             const consumedSub = drawWrapped(certSub, {
               x: sideX, yPos: sidebarY, w: sideContentW, font: fontRegular, size: s(7), color: grayColor, lineHeight: 1.22
             });
-            sidebarY -= consumedSub + s(5);
+            sidebarY -= consumedSub + s(4);
           } else {
-            sidebarY -= s(4);
+            sidebarY -= s(3);
           }
         }
-        sidebarY -= s(8);
+        sidebarY -= s(6);
       }
 
       // 3. Languages
@@ -587,7 +590,7 @@ export async function generateResumePDF(data, customization = {}) {
           if (lang.proficiency) {
             drawT(lang.proficiency, { x: sideX + sideContentW, yPos: sidebarY, size: s(7), font: fontRegular, color: grayColor, align: "right" });
           }
-          sidebarY -= s(12);
+          sidebarY -= s(11);
         }
       }
     }
@@ -603,7 +606,7 @@ export async function generateResumePDF(data, customization = {}) {
       const consumed = drawWrapped(summary, {
         x: mainX, yPos: y, w: mainW, font: fontRegular, size: s(8.5), color: darkCharcoal, lineHeight: 1.50
       });
-      y -= consumed + s(16);
+      y -= consumed + s(14);
     }
 
     // 2. EXPERIENCE
@@ -612,8 +615,9 @@ export async function generateResumePDF(data, customization = {}) {
       for (const exp of experiences) {
         const title = exp.title || "Job Title";
         const dateStr = [exp.startDate, exp.endDate].filter(Boolean).join(" - ");
+        const dateW = dateStr ? fontItalic.widthOfTextAtSize(dateStr, s(8)) + 8 : 0;
         
-        drawT(title, { x: mainX, yPos: y, size: s(9.5), font: fontBold, color: darkCharcoal });
+        drawT(title, { x: mainX, yPos: y, size: s(9.5), font: fontBold, color: darkCharcoal, maxW: mainW - dateW });
         if (dateStr) {
           drawT(dateStr, { x: mainX + mainW, yPos: y, size: s(8), font: fontItalic, color: grayColor, align: "right" });
         }
@@ -622,20 +626,20 @@ export async function generateResumePDF(data, customization = {}) {
         const subBits = [exp.company, exp.location].filter(Boolean).join(" · ");
         if (subBits) {
           drawT(subBits, { x: mainX, yPos: y, size: s(8.5), font: fontItalic, color: accentColor, maxW: mainW });
-          y -= s(8.5) + s(4.5);
+          y -= s(8.5) + s(4);
         }
 
         const bullets = (exp.bullets || []).filter((b) => b && typeof b === "string" && b.trim());
         for (const bullet of bullets) {
-          if (page) page.drawCircle({ x: mainX + 4, y: y + s(2.5), size: 1.6, color: grayColor });
+          if (page) page.drawCircle({ x: mainX + 4, y: y + s(2.5), size: 1.5, color: grayColor });
           const consumedBullet = drawWrapped(bullet, {
-            x: mainX + 11, yPos: y, w: mainW - 11, font: fontRegular, size: s(8), color: darkCharcoal, lineHeight: 1.42
+            x: mainX + 11, yPos: y, w: mainW - 11, font: fontRegular, size: s(8), color: darkCharcoal, lineHeight: 1.40
           });
-          y -= consumedBullet + s(3.5);
+          y -= consumedBullet + s(3);
         }
-        y -= s(8);
+        y -= s(6);
       }
-      y -= s(4);
+      y -= s(3);
     }
 
     // 3. EDUCATION
@@ -643,19 +647,22 @@ export async function generateResumePDF(data, customization = {}) {
       y = drawSectionTitle("Education", y, mainX, mainW);
       for (const edu of educations) {
         const deg = edu.degree || "Degree";
-        drawT(deg, { x: mainX, yPos: y, size: s(9), font: fontBold, color: darkCharcoal, maxW: mainW - 85 });
-        if (edu.year) {
-          drawT(edu.year, { x: mainX + mainW, yPos: y, size: s(8), font: fontItalic, color: grayColor, align: "right" });
+        const yearStr = edu.year || "";
+        const yearW = yearStr ? fontItalic.widthOfTextAtSize(yearStr, s(8)) + 8 : 0;
+        
+        drawT(deg, { x: mainX, yPos: y, size: s(9), font: fontBold, color: darkCharcoal, maxW: mainW - yearW });
+        if (yearStr) {
+          drawT(yearStr, { x: mainX + mainW, yPos: y, size: s(8), font: fontItalic, color: grayColor, align: "right" });
         }
         y -= s(9) + s(2.5);
 
         const eduSub = [edu.institution, edu.gpa ? `GPA: ${edu.gpa}` : null].filter(Boolean).join(" · ");
         if (eduSub) {
           drawT(eduSub, { x: mainX, yPos: y, size: s(8), font: fontItalic, color: grayColor, maxW: mainW });
-          y -= s(8) + s(8);
+          y -= s(8) + s(6);
         }
       }
-      y -= s(4);
+      y -= s(3);
     }
 
     // 4. SKILLS (Single column templates: Classic, Minimal, Executive, Professional — Compact uses sidebar)
@@ -714,27 +721,28 @@ export async function generateResumePDF(data, customization = {}) {
       for (const proj of projects) {
         const pName = proj.name;
         const pTech = proj.techStack ? `(${proj.techStack})` : "";
+        const pNameW = fontBold.widthOfTextAtSize(pName, s(9.5));
         
         drawT(pName, { x: mainX, yPos: y, size: s(9.5), font: fontBold, color: darkCharcoal, maxW: mainW });
-        y -= s(9.5) + s(2);
         
         if (pTech) {
-          drawT(pTech, { x: mainX, yPos: y, size: s(7.5), font: fontBold, color: accentColor, maxW: mainW });
-          y -= s(7.5) + s(3.5);
+          const techX = Math.min(mainX + pNameW + 6, mainX + mainW - 80);
+          drawT(pTech, { x: techX, yPos: y, size: s(7.5), font: fontBold, color: accentColor, maxW: mainW - (techX - mainX) });
         }
+        y -= s(9.5) + s(2);
 
         if (proj.description) {
           const consumedDesc = drawWrapped(proj.description.trim(), {
-            x: mainX, yPos: y, w: mainW, font: fontRegular, size: s(8), color: darkCharcoal, lineHeight: 1.42
+            x: mainX, yPos: y, w: mainW, font: fontRegular, size: s(8), color: darkCharcoal, lineHeight: 1.40
           });
-          y -= consumedDesc + s(3);
+          y -= consumedDesc + s(2.5);
         }
 
         if (proj.link) {
           drawT(proj.link.trim(), { x: mainX, yPos: y, size: s(7.5), font: fontRegular, color: accentColor, maxW: mainW });
-          y -= s(7.5) + s(10);
+          y -= s(7.5) + s(8);
         }
-        y -= s(4);
+        y -= s(3);
       }
     }
 
