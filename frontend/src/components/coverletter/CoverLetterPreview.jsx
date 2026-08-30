@@ -1,67 +1,49 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Download, FileText, Settings2, ZoomIn, ZoomOut, Maximize2, Copy, Check, Printer } from 'lucide-react';
+import {
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+  Minimize2,
+  Download,
+  Check,
+  Copy,
+  Type,
+  Palette
+} from 'lucide-react';
 import { generateCoverLetterPDF } from '../../utils/pdfGenerator';
-
-const TEMPLATES = [
-  { id: 'classic', label: 'Classic' },
-  { id: 'modern', label: 'Modern' },
-  { id: 'minimal', label: 'Minimal' },
-  { id: 'executive', label: 'Executive' },
-  { id: 'professional', label: 'Professional' }
-];
-
-const FONTS = [
-  // Sans-Serif
-  { id: "'Inter', sans-serif", label: "Inter (Clean)" },
-  { id: "'Roboto', sans-serif", label: "Roboto (ATS Standard)" },
-  { id: "'Plus Jakarta Sans', sans-serif", label: "Plus Jakarta (Geometric)" },
-  { id: "'Outfit', sans-serif", label: "Outfit (Modern)" },
-  { id: "'Poppins', sans-serif", label: "Poppins (Contemporary)" },
-  { id: "'Montserrat', sans-serif", label: "Montserrat (Bold)" },
-  { id: "'Lato', sans-serif", label: "Lato (Corporate)" },
-  { id: "'Open Sans', sans-serif", label: "Open Sans (Neutral)" },
-  // Serif
-  { id: "'Merriweather', serif", label: "Merriweather (Editorial)" },
-  { id: "'Lora', serif", label: "Lora (Classic)" },
-  { id: "'Playfair Display', serif", label: "Playfair Display (Luxury)" },
-  { id: "'Georgia', serif", label: "Georgia (Formal)" },
-  // Monospace
-  { id: "'Roboto Mono', monospace", label: "Roboto Mono (Developer)" },
-  { id: "'JetBrains Mono', monospace", label: "JetBrains Mono (Code)" }
-];
+import { FONT_OPTIONS } from '../builder/TemplateCustomizer';
 
 const SIZES = [
-  { id: "small", label: "Small" },
-  { id: "default", label: "Default" },
-  { id: "large", label: "Large" }
+  { id: "small", label: "Compact" },
+  { id: "default", label: "Standard" },
+  { id: "large", label: "Prominent" }
 ];
 
 export default function CoverLetterPreview({ formData, customization, setCustomization }) {
-  const [downloading, setDownloading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [zoomScale, setZoomScale] = useState(0.48);
   const containerRef = useRef(null);
   const letterRef = useRef(null);
+  const [zoomScale, setZoomScale] = useState(0.55);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
-  // Auto-fit initial scale on load
+  // Auto-fit initial scale on mount & resize
   useEffect(() => {
     const handleAutoFit = () => {
       if (containerRef.current) {
         const availableW = containerRef.current.clientWidth - 48;
-        const fitZoom = Math.min(Math.max(availableW / 794, 0.35), 0.95);
-        setZoomScale(fitZoom);
+        const fitZoom = Math.min(Math.max(availableW / 794, 0.35), 0.85);
+        setZoomScale(parseFloat(fitZoom.toFixed(2)));
       }
     };
     handleAutoFit();
+    window.addEventListener('resize', handleAutoFit);
+    return () => window.removeEventListener('resize', handleAutoFit);
   }, []);
 
   const handleCustomizationChange = (e) => {
     const { name, value } = e.target;
     setCustomization(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handlePrint = () => {
-    window.print();
   };
 
   const handleExportPDF = async () => {
@@ -72,23 +54,19 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `${formData.name || 'Candidate'}_Cover_Letter.pdf`;
+      link.download = `${(formData.name || 'Candidate').replace(/\s+/g, '_')}_Cover_Letter.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 2500);
     } catch (err) {
       console.error("PDF Export error:", err);
       alert("Failed to generate PDF. Please try again.");
     } finally {
       setDownloading(false);
     }
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(formData.letterContent || "");
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   // Font size scale multiplier
@@ -140,111 +118,71 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
   const styles = getTemplateStyles();
 
   return (
-    <div className="h-full flex flex-col bg-slate-50 dark:bg-[#070b14] overflow-hidden">
-      {/* Customization Toolbar */}
-      <div className="bg-white dark:bg-[#0b0f19] border-b border-slate-200 dark:border-slate-800 p-3.5 shrink-0 shadow-sm z-10 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Settings2 className="w-4 h-4 text-slate-400" />
-          
-          <select 
-            name="templateId" 
-            value={customization.templateId} 
-            onChange={handleCustomizationChange}
-            className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
-          >
-            {TEMPLATES.map(t => <option key={t.id} value={t.id}>{t.label} Layout</option>)}
-          </select>
-
-          <select 
-            name="fontFamily" 
-            value={customization.fontFamily} 
-            onChange={handleCustomizationChange}
-            className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer max-w-[140px]"
-          >
-            {FONTS.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
-          </select>
-
-          <select 
-            name="fontSize" 
-            value={customization.fontSize} 
-            onChange={handleCustomizationChange}
-            className="text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-indigo-500/20 cursor-pointer"
-          >
-            {SIZES.map(s => <option key={s.id} value={s.id}>{s.label} Size</option>)}
-          </select>
-
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Accent</span>
-            <input 
-              type="color" 
-              name="accentColor" 
-              value={customization.accentColor} 
+    <div className="h-full w-full flex flex-col relative overflow-hidden">
+      {/* ── Sub-toolbar for Typography & Accent ── */}
+      <div className="h-11 px-4 bg-white/80 dark:bg-[#0b0f19]/80 backdrop-blur-sm border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between gap-3 shrink-0 z-10 text-xs">
+        <div className="flex items-center gap-3">
+          {/* Font Selector */}
+          <div className="flex items-center gap-1.5">
+            <Type className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              name="fontFamily"
+              value={customization.fontFamily}
               onChange={handleCustomizationChange}
-              className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0"
+              className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium rounded-lg px-2 py-1 text-xs border border-slate-200 dark:border-slate-700 outline-none cursor-pointer"
+            >
+              {FONT_OPTIONS.map(f => (
+                <option key={f.id} value={f.family}>{f.label} ({f.category})</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Font Size */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+            {SIZES.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setCustomization(prev => ({ ...prev, fontSize: s.id }))}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${
+                  customization.fontSize === s.id
+                    ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-300 shadow-xs"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Accent Color */}
+          <div className="flex items-center gap-1.5 pl-2 border-l border-slate-200 dark:border-slate-700">
+            <Palette className="w-3.5 h-3.5 text-slate-400" />
+            <input
+              type="color"
+              name="accentColor"
+              value={customization.accentColor}
+              onChange={handleCustomizationChange}
+              className="w-5 h-5 rounded cursor-pointer border-0 bg-transparent p-0"
+              title="Custom Accent Color"
             />
           </div>
         </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          {/* Zoom Toolbar */}
-          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-            <button
-              onClick={() => setZoomScale((z) => Math.max(0.3, Number((z - 0.08).toFixed(2))))}
-              className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-all"
-              title="Zoom Out"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-[11px] font-bold font-mono px-1.5 min-w-[38px] text-center text-slate-700 dark:text-slate-200">
-              {Math.round(zoomScale * 100)}%
-            </span>
-            <button
-              onClick={() => setZoomScale((z) => Math.min(1.2, Number((z + 0.08).toFixed(2))))}
-              className="p-1 rounded-lg hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-all"
-              title="Zoom In"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setZoomScale(0.48)}
-              className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-indigo-50 dark:hover:bg-slate-600 transition-all"
-              title="Fit to screen"
-            >
-              Fit
-            </button>
-          </div>
-
-          <button 
-            onClick={handleCopy}
-            className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? "Copied" : "Copy"}
-          </button>
-
-          <button 
-            onClick={handleExportPDF}
-            disabled={downloading}
-            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
-          >
-            {downloading ? <div className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            {downloading ? "Generating..." : "Download PDF"}
-          </button>
-        </div>
       </div>
 
-      {/* A4 Scaled Preview Area */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto p-6 flex justify-center items-start custom-scrollbar">
+      {/* ── Scrollable A4 Canvas ── */}
+      <div
+        ref={containerRef}
+        className="flex-1 overflow-y-auto overflow-x-auto p-6 sm:p-8 flex justify-center items-start custom-scrollbar relative z-10"
+      >
         <div 
           ref={letterRef}
           id="cover-letter-printable-area"
-          className="shadow-2xl ring-1 ring-black/10 bg-white transition-all transform origin-top"
+          className="bg-white transition-all duration-200 origin-top shadow-[0_20px_50px_rgba(0,0,0,0.15)] ring-1 ring-black/5 dark:ring-white/10 rounded-sm"
           style={{ 
             width: '794px', 
             minHeight: '1123px', 
             transform: `scale(${zoomScale})`, 
-            marginBottom: `${-(1 - zoomScale) * 1123}px`,
+            marginBottom: `${-(1 - zoomScale) * 1123 + 40}px`,
             fontFamily: customization.fontFamily,
           }}
         >
@@ -343,7 +281,133 @@ export default function CoverLetterPreview({ formData, customization, setCustomi
           </div>
         </div>
       </div>
+
+      {/* ── Floating Studio Zoom Controls ── */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 shadow-lg text-xs">
+        <button
+          onClick={() => setZoomScale((z) => Math.max(0.3, parseFloat((z - 0.05).toFixed(2))))}
+          title="Zoom Out"
+          className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+        >
+          <ZoomOut className="w-3.5 h-3.5" />
+        </button>
+
+        <span className="font-mono text-[11px] font-bold min-w-[36px] text-center text-slate-800 dark:text-slate-200">
+          {Math.round(zoomScale * 100)}%
+        </span>
+
+        <button
+          onClick={() => setZoomScale((z) => Math.min(1.2, parseFloat((z + 0.05).toFixed(2))))}
+          title="Zoom In"
+          className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+        >
+          <ZoomIn className="w-3.5 h-3.5" />
+        </button>
+
+        <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1" />
+
+        <button
+          onClick={() => {
+            if (containerRef.current) {
+              const availableW = containerRef.current.clientWidth - 48;
+              const fitScale = Math.min(Math.max(availableW / 794, 0.35), 0.85);
+              setZoomScale(parseFloat(fitScale.toFixed(2)));
+            } else {
+              setZoomScale(0.55);
+            }
+          }}
+          className="px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+        >
+          Fit
+        </button>
+
+        <button
+          onClick={() => setZoomScale(0.75)}
+          className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${
+            zoomScale === 0.75
+              ? "bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          75%
+        </button>
+
+        <button
+          onClick={() => setZoomScale(1.0)}
+          className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-colors ${
+            zoomScale === 1.0
+              ? "bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300"
+              : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
+        >
+          100%
+        </button>
+
+        <div className="h-3.5 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1" />
+
+        <button
+          onClick={() => setIsFullscreen(true)}
+          title="Open Fullscreen Preview"
+          className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* ── Fullscreen Preview Modal ── */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex flex-col animate-in fade-in duration-200">
+          <div className="h-14 px-6 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+            <span className="text-sm font-bold text-white">Cover Letter Preview</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleExportPDF}
+                disabled={downloading}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>{downloading ? "Generating..." : "Download PDF"}</span>
+              </button>
+              <button
+                onClick={() => setIsFullscreen(false)}
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+              >
+                <Minimize2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 overflow-auto p-8 flex justify-center items-start custom-scrollbar">
+            <div className="bg-white shadow-2xl rounded-sm my-auto" style={{ width: '794px', minHeight: '1123px', fontFamily: customization.fontFamily }}>
+              <div className={`${styles.container} w-full text-slate-800`}>
+                {/* Modern Sidebar */}
+                {customization.templateId === 'modern' && (
+                  <div className={styles.sidebar} style={{ backgroundColor: customization.accentColor }}>
+                    <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-2xl font-bold mb-6 mx-auto">
+                      {formData.name ? formData.name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'C'}
+                    </div>
+                    <h1 className="text-xl font-bold leading-tight mb-2 text-center">{formData.name || 'Your Name'}</h1>
+                    <div className="w-8 h-1 bg-white/40 mb-6 mx-auto"></div>
+                    <div className="space-y-3 text-xs text-white/90">
+                      {formData.email && <p className="break-all">{formData.email}</p>}
+                      {formData.phone && <p>{formData.phone}</p>}
+                    </div>
+                  </div>
+                )}
+
+                {/* Main */}
+                <div className={styles.main}>
+                  <div className="space-y-5 text-slate-700" style={{ fontSize: `${14 * sizeScale}px`, lineHeight: 1.6 }}>
+                    {formData.date && <p className="font-bold text-slate-900">{formData.date}</p>}
+                    <div className="pt-2 whitespace-pre-wrap">
+                      {formData.letterContent || 'Your cover letter will appear here...'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
