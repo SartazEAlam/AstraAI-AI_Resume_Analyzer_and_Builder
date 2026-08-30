@@ -239,7 +239,11 @@ function App() {
     <div className={`min-h-screen transition-colors ${theme === "dark" ? "bg-[#0b0f19] text-slate-100" : "bg-slate-50 text-slate-900"}`}>
       <Navbar mode={mode} setMode={setMode} theme={theme} toggleTheme={toggleTheme} />
 
-      <main className="relative z-10 pt-28 pb-20 px-6 max-w-7xl mx-auto">
+      <main className={
+        mode === "builder" || mode === "cover_letter"
+          ? "relative z-10 pt-[57px] h-screen w-full overflow-hidden flex flex-col"
+          : "relative z-10 pt-28 pb-20 px-6 max-w-7xl mx-auto"
+      }>
         {mode === "individual" ? (
           <>
             {/* Hero Section */}
@@ -909,7 +913,7 @@ function App() {
             </div>
           </>
         ) : mode === "builder" ? (
-          <div className="max-w-[1600px] mx-auto w-full">
+          <div className="w-full h-full">
             <ResumeBuilder
               theme={theme}
               onAnalyzeResume={(text) => {
@@ -933,7 +937,7 @@ function App() {
             />
           </div>
         ) : mode === "cover_letter" ? (
-          <div className="max-w-[1600px] mx-auto w-full">
+          <div className="w-full h-full">
             <CoverLetterBuilder />
           </div>
         ) : (
@@ -952,7 +956,8 @@ function App() {
         )}
       </main>
 
-      {/* Redesigned Enterprise Footer */}
+      {/* Enterprise Footer (Rendered only on landing/audit/recruiter pages) */}
+      {(mode === "individual" || mode === "organization") && (
       <footer className="border-t border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/60 backdrop-blur-md pt-16 pb-12 px-6 mt-24 relative z-10 transition-colors">
         <div className="max-w-7xl mx-auto space-y-12">
           {/* Top Row: Brand & Columns */}
@@ -1079,6 +1084,7 @@ function App() {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 }
