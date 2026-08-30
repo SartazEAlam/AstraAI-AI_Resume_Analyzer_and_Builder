@@ -83,10 +83,92 @@ function normalizeSkills(skills) {
   return [];
 }
 
+// ── Global In-Memory TTF Font Cache ──
+const fontBytesCache = new Map();
+
+async function fetchGoogleFontTtf(family, weight = 400, italic = false) {
+  const cacheKey = `${family}_${weight}_${italic ? "italic" : "normal"}`;
+  if (fontBytesCache.has(cacheKey)) {
+    return fontBytesCache.get(cacheKey);
+  }
+
+  try {
+    const ua = "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko";
+    const italicStr = italic ? "ital," : "";
+    const weightStr = italic ? `1,${weight}` : `${weight}`;
+    const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:${italicStr}wght@${weightStr}&display=swap`;
+    
+    const res = await fetch(url, { headers: { "User-Agent": ua } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const css = await res.text();
+    
+    const match = css.match(/src:\s*url\((https:\/\/[^)]+)\)/);
+    if (!match) throw new Error("No font URL found in Google Fonts CSS");
+    
+    const fontRes = await fetch(match[1]);
+    if (!fontRes.ok) throw new Error(`Font HTTP ${fontRes.status}`);
+    const fontBuf = await fontRes.arrayBuffer();
+    const bytes = new Uint8Array(fontBuf);
+    
+    fontBytesCache.set(cacheKey, bytes);
+    return bytes;
+  } catch (err) {
+    console.warn(`Could not load web font ${family} (${weight}):`, err.message);
+    return null;
+  }
+}
+
+function resolveGoogleFontName(customFont) {
+  const s = (customFont || "").toLowerCase();
+  if (s.includes("poppins")) return "Poppins";
+  if (s.includes("jakarta")) return "Plus Jakarta Sans";
+  if (s.includes("outfit")) return "Outfit";
+  if (s.includes("montserrat")) return "Montserrat";
+  if (s.includes("lato")) return "Lato";
+  if (s.includes("open-sans") || s.includes("open sans")) return "Open Sans";
+  if (s.includes("roboto-mono") || s.includes("roboto mono")) return "Roboto Mono";
+  if (s.includes("jetbrains")) return "JetBrains Mono";
+  if (s.includes("roboto")) return "Roboto";
+  if (s.includes("merriweather")) return "Merriweather";
+  if (s.includes("lora")) return "Lora";
+  if (s.includes("playfair")) return "Playfair Display";
+  if (s.includes("inter")) return "Inter";
+  return "Inter";
+}
+
 async function loadFontFamily(pdfDoc, customFont) {
+  pdfDoc.registerFontkit(fontkit);
+  const targetFamily = resolveGoogleFontName(customFont);
   const fontStr = (customFont || "").toLowerCase();
-  
-  // 1. Technical Monospace
+
+  // 1. Try embedding real Google Font TrueType fonts
+  try {
+    const [regBytes, boldBytes] = await Promise.all([
+      fetchGoogleFontTtf(targetFamily, 400, false),
+      fetchGoogleFontTtf(targetFamily, 700, false),
+    ]);
+
+    if (regBytes && boldBytes) {
+      const fontRegular = await pdfDoc.embedFont(regBytes);
+      const fontBold = await pdfDoc.embedFont(boldBytes);
+      
+      let fontItalic = fontRegular;
+      try {
+        const italicBytes = await fetchGoogleFontTtf(targetFamily, 400, true);
+        if (italicBytes) {
+          fontItalic = await pdfDoc.embedFont(italicBytes);
+        }
+      } catch {
+        fontItalic = fontRegular;
+      }
+
+      return { fontRegular, fontBold, fontItalic };
+    }
+  } catch (err) {
+    console.warn("Falling back to standard PDF font due to embed error:", err);
+  }
+
+  // 2. Fallback to Standard 14 Type 1 Fonts if offline or network error
   if (
     fontStr.includes("mono") ||
     fontStr.includes("jetbrains") ||
@@ -101,8 +183,7 @@ async function loadFontFamily(pdfDoc, customFont) {
       fontItalic: await pdfDoc.embedFont(StandardFonts.CourierOblique)
     };
   }
-  
-  // 2. Editorial / Classic Serif
+
   if (
     fontStr.includes("georgia") ||
     fontStr.includes("times") ||
@@ -121,7 +202,6 @@ async function loadFontFamily(pdfDoc, customFont) {
     };
   }
 
-  // 3. Modern / Clean Sans-Serif (Default: Inter, Roboto, Plus Jakarta Sans, Outfit, Poppins, Montserrat, Lato, Open Sans, Helvetica)
   return {
     fontRegular: await pdfDoc.embedFont(StandardFonts.Helvetica),
     fontBold: await pdfDoc.embedFont(StandardFonts.HelveticaBold),
