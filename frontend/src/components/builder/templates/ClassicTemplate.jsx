@@ -10,6 +10,9 @@ const ClassicTemplate = ({ data, customization }) => {
   const fontSize = customization?.fontSize || "default";
   const sizeScale = fontSize === "small" ? 0.88 : fontSize === "large" ? 1.25 : 1.05;
 
+  const isSerif = (fontFamily || "").toLowerCase().includes("serif") && !(fontFamily || "").toLowerCase().includes("sans-serif");
+  const isMono = (fontFamily || "").toLowerCase().includes("mono");
+
   const {
     personalInfo = {},
     summary = "",
@@ -31,28 +34,72 @@ const ClassicTemplate = ({ data, customization }) => {
       ? skills.split(/[,;\n•·|]+/).map((s) => s.trim()).filter(Boolean)
       : [];
 
-  /* Section header with accent left bar */
-  const SectionDivider = ({ title }) => (
-    <div style={{ marginTop: 22 * sizeScale, marginBottom: 10 * sizeScale }}>
-      <h2
-        style={{
-          fontSize: 13 * sizeScale,
-          fontWeight: 700,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: accent,
-          margin: 0,
-          paddingBottom: 6,
-          paddingLeft: 12,
-          borderLeft: `3.5px solid ${accent}`,
-          borderBottom: `1.5px solid ${accent}25`,
-          fontFamily,
-        }}
-      >
-        {title}
-      </h2>
-    </div>
-  );
+  /* Section header with distinct archetype styling */
+  const SectionDivider = ({ title }) => {
+    if (isSerif) {
+      return (
+        <div style={{ marginTop: 20 * sizeScale, marginBottom: 10 * sizeScale }}>
+          <h2
+            style={{
+              fontSize: 12.5 * sizeScale,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              color: accent,
+              margin: 0,
+              paddingBottom: 4,
+              borderBottom: `1.5px solid ${accent}`,
+              fontFamily,
+            }}
+          >
+            {title}
+          </h2>
+        </div>
+      );
+    }
+
+    if (isMono) {
+      return (
+        <div style={{ marginTop: 20 * sizeScale, marginBottom: 8 * sizeScale }}>
+          <h2
+            style={{
+              fontSize: 12 * sizeScale,
+              fontWeight: 700,
+              color: accent,
+              margin: 0,
+              paddingBottom: 4,
+              borderBottom: `1px solid ${accent}40`,
+              fontFamily,
+            }}
+          >
+            {`// ${title.toUpperCase()}`}
+          </h2>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ marginTop: 22 * sizeScale, marginBottom: 10 * sizeScale }}>
+        <h2
+          style={{
+            fontSize: 13 * sizeScale,
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: accent,
+            margin: 0,
+            paddingBottom: 6,
+            paddingLeft: 12,
+            borderLeft: `3.5px solid ${accent}`,
+            borderBottom: `1.5px solid ${accent}25`,
+            fontFamily,
+          }}
+        >
+          {title}
+        </h2>
+      </div>
+    );
+  };
 
   const renderSection = (key) => {
     switch (key) {
@@ -117,25 +164,39 @@ const ClassicTemplate = ({ data, customization }) => {
         return normalizedSkills.length > 0 ? (
           <div key="skills">
             <SectionDivider title="Technical Skills" />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {normalizedSkills.map((skill, i) => (
-                <span
-                  key={i}
-                  style={{
-                    fontSize: 9.5 * sizeScale,
-                    fontWeight: 600,
-                    padding: "3px 12px",
-                    borderRadius: 9999,
-                    background: `${accent}12`,
-                    border: `1px solid ${accent}30`,
-                    color: "#374151",
-                    fontFamily,
-                  }}
-                >
-                  {skill}
-                </span>
-              ))}
-            </div>
+            {isSerif ? (
+              <p style={{ fontSize: 10.5 * sizeScale, color: "#374151", margin: 0, lineHeight: 1.7, fontFamily }}>
+                {normalizedSkills.join("   ·   ")}
+              </p>
+            ) : isMono ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {normalizedSkills.map((skill, i) => (
+                  <span key={i} style={{ fontSize: 9.5 * sizeScale, fontWeight: 600, color: accent, fontFamily }}>
+                    {`[ ${skill} ]`}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {normalizedSkills.map((skill, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      fontSize: 9.5 * sizeScale,
+                      fontWeight: 600,
+                      padding: "3px 12px",
+                      borderRadius: 9999,
+                      background: `${accent}12`,
+                      border: `1px solid ${accent}30`,
+                      color: "#374151",
+                      fontFamily,
+                    }}
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         ) : null;
 
@@ -204,24 +265,25 @@ const ClassicTemplate = ({ data, customization }) => {
       }}
     >
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: 6, paddingBottom: 16, borderBottom: `3px solid ${accent}` }}>
+      <div style={{ textAlign: "center", marginBottom: 6, paddingBottom: 16, borderBottom: isSerif ? `3px double ${accent}` : `3px solid ${accent}` }}>
         <h1
           style={{
-            fontSize: 26 * sizeScale,
+            fontSize: (isSerif ? 24 : 26) * sizeScale,
             fontWeight: 800,
+            textTransform: isSerif || isMono ? "uppercase" : "none",
             color: "#111827",
             margin: 0,
-            letterSpacing: "0.02em",
+            letterSpacing: isSerif ? "0.08em" : "0.02em",
             fontFamily,
           }}
         >
-          {personalInfo.fullName || "Your Name"}
+          {isMono ? `> ${personalInfo.fullName || "Your Name"}` : personalInfo.fullName || "Your Name"}
         </h1>
-        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "4px 0", marginTop: 8, fontSize: 10 * sizeScale, color: "#4b5563", fontFamily }}>
+        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: "4px 0", marginTop: 8, fontSize: 10 * sizeScale, color: "#4b5563", fontFamily, fontStyle: isSerif ? "italic" : "normal" }}>
           {[personalInfo.email, personalInfo.phone, personalInfo.location].filter(Boolean).map((item, i, arr) => (
             <React.Fragment key={i}>
               <span>{item}</span>
-              {i < arr.length - 1 && <span style={{ margin: "0 10px", color: "#d1d5db" }}>|</span>}
+              {i < arr.length - 1 && <span style={{ margin: "0 10px", color: isSerif ? accent : "#d1d5db" }}>{isSerif ? "·" : "|"}</span>}
             </React.Fragment>
           ))}
         </div>
