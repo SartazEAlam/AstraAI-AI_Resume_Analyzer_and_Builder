@@ -86,13 +86,11 @@ function normalizeSkills(skills) {
 async function loadFontFamily(pdfDoc, customFont) {
   const fontStr = (customFont || "").toLowerCase();
 
-  // 1. Technical Monospace (JetBrains Mono, Roboto Mono, Courier)
+  // 1. Technical Monospace (JetBrains Mono / Courier)
   if (
     fontStr.includes("mono") ||
     fontStr.includes("jetbrains") ||
-    fontStr.includes("consolas") ||
     fontStr.includes("courier") ||
-    fontStr.includes("fira") ||
     fontStr.includes("code")
   ) {
     return {
@@ -100,19 +98,16 @@ async function loadFontFamily(pdfDoc, customFont) {
       fontBold: await pdfDoc.embedFont(StandardFonts.CourierBold),
       fontItalic: await pdfDoc.embedFont(StandardFonts.CourierOblique),
       category: "mono",
+      charSpacing: 0,
+      headerTracking: 0,
     };
   }
 
-  // 2. Editorial / Classic Serif (Merriweather, Lora, Playfair Display, Georgia, Times)
+  // 2. Classic Executive Editorial Serif (Merriweather / Times)
   if (
-    fontStr.includes("georgia") ||
-    fontStr.includes("times") ||
     fontStr.includes("merriweather") ||
-    fontStr.includes("lora") ||
-    fontStr.includes("playfair") ||
-    fontStr.includes("garamond") ||
-    fontStr.includes("baskerville") ||
-    fontStr.includes("cambria") ||
+    fontStr.includes("times") ||
+    fontStr.includes("georgia") ||
     (fontStr.includes("serif") && !fontStr.includes("sans-serif"))
   ) {
     return {
@@ -120,15 +115,19 @@ async function loadFontFamily(pdfDoc, customFont) {
       fontBold: await pdfDoc.embedFont(StandardFonts.TimesRomanBold),
       fontItalic: await pdfDoc.embedFont(StandardFonts.TimesRomanItalic),
       category: "serif",
+      charSpacing: 0,
+      headerTracking: 0.8,
     };
   }
 
-  // 3. Modern Clean Sans-Serif (Inter, Roboto, Plus Jakarta, Outfit, Poppins, Montserrat, Lato, Open Sans)
+  // 3. Clean Modern Sans-Serif (Inter / Helvetica - Universal ATS Standard)
   return {
     fontRegular: await pdfDoc.embedFont(StandardFonts.Helvetica),
     fontBold: await pdfDoc.embedFont(StandardFonts.HelveticaBold),
     fontItalic: await pdfDoc.embedFont(StandardFonts.HelveticaOblique),
     category: "sans",
+    charSpacing: 0,
+    headerTracking: 0.5,
   };
 }
 
@@ -140,7 +139,12 @@ export async function generateResumePDF(data, customization = {}) {
   const accentHex = customization?.accentColor || "#4f46e5";
   const customFont = customization?.fontFamily || "";
 
-  const { fontRegular, fontBold, fontItalic } = await loadFontFamily(pdfDoc, customFont);
+  const { fontRegular, fontBold, fontItalic, category = "sans", charSpacing = 0, headerTracking = 0.5 } = await loadFontFamily(pdfDoc, customFont);
+
+  const isSerif = category === "serif" || category === "slab";
+  const isMono = category === "mono";
+  const isGeometric = category === "geometric";
+  const isCondensed = category === "condensed";
 
   // Distinct font size setting
   const fontSizeSetting = customization?.fontSize || "default";
@@ -191,9 +195,10 @@ export async function generateResumePDF(data, customization = {}) {
 
     let y = PAGE_HEIGHT - marginTop;
     let sidebarY = PAGE_HEIGHT - marginTop;
+    let compactHeaderBorderY = 0;
 
     // ── Core Drawing Helpers ──
-    const drawT = (text, { x, yPos, size, font, color, maxW, align = "left", skipSanitize = false }) => {
+    const drawT = (text, { x, yPos, size, font, color, maxW, align = "left", skipSanitize = false, spacing }) => {
       if (!text || !page) return;
       const safe = skipSanitize ? text : sanitize(text);
       if (!safe) return;
@@ -212,7 +217,12 @@ export async function generateResumePDF(data, customization = {}) {
       if (align === "center") drawX = x - actualW / 2;
       else if (align === "right") drawX = x - actualW;
 
-      page.drawText(display, { x: drawX, y: yPos, size, font, color });
+      const track = spacing !== undefined ? spacing : (charSpacing || 0);
+      if (track !== 0) {
+        page.drawText(display, { x: drawX, y: yPos, size, font, color, characterSpacing: track });
+      } else {
+        page.drawText(display, { x: drawX, y: yPos, size, font, color });
+      }
       return actualW;
     };
 
@@ -318,27 +328,41 @@ export async function generateResumePDF(data, customization = {}) {
     else if (isCompact) {
       // Compact: Name left, contact right, accent line below
       if (pi.fullName) {
-        drawT(pi.fullName, { x: marginX, yPos: y, size: s(19), font: fontBold, color: darkCharcoal, maxW: PAGE_WIDTH - marginX * 2 - 180 });
+        if (isSerif) {
+          drawT(pi.fullName.toUpperCase(), { x: marginX, yPos: y, size: s(18), font: fontBold, color: darkCharcoal, maxW: PAGE_WIDTH - marginX * 2 - 180, spacing: 0.8 });
+        } else if (isMono) {
+          drawT(`> ${pi.fullName.toUpperCase()}`, { x: marginX, yPos: y, size: s(17), font: fontBold, color: darkCharcoal, maxW: PAGE_WIDTH - marginX * 2 - 180 });
+        } else {
+          drawT(pi.fullName, { x: marginX, yPos: y, size: s(19), font: fontBold, color: darkCharcoal, maxW: PAGE_WIDTH - marginX * 2 - 180 });
+        }
       }
       
       const contactRight = [pi.email, pi.phone, pi.location].filter(Boolean);
       let rightY = y;
       for (const item of contactRight) {
-        drawT(item, { x: PAGE_WIDTH - marginX, yPos: rightY, size: s(7.5), font: fontRegular, color: grayColor, align: "right", maxW: 175 });
+        const itemFont = isSerif ? fontItalic : fontRegular;
+        drawT(item, { x: PAGE_WIDTH - marginX, yPos: rightY, size: s(7.5), font: itemFont, color: grayColor, align: "right", maxW: 175 });
         rightY -= s(10);
       }
       y -= s(19) + g(3);
 
-      const linkLine = [pi.linkedin, pi.portfolio].filter(Boolean).join("   ·   ");
+      const linkDelimiter = isSerif ? "   ·   " : "   ·   ";
+      const linkLine = [pi.linkedin, pi.portfolio].filter(Boolean).join(linkDelimiter);
       if (linkLine) {
         drawT(linkLine, { x: marginX, yPos: y, size: s(7.5), font: fontRegular, color: accentColor, maxW: mainW });
         y -= s(7.5) + g(3);
       }
 
-      drawLine(marginX, y, PAGE_WIDTH - marginX, 2, accentColor);
-      y -= g(10);
+      compactHeaderBorderY = y;
+      if (isSerif) {
+        drawLine(marginX, compactHeaderBorderY, PAGE_WIDTH - marginX, 1.5, accentColor);
+        drawLine(marginX, compactHeaderBorderY - 2, PAGE_WIDTH - marginX, 0.5, accentColor);
+      } else {
+        drawLine(marginX, compactHeaderBorderY, PAGE_WIDTH - marginX, 2.5, accentColor);
+      }
+      y = compactHeaderBorderY - s(18);
 
-      // CRITICAL: Sidebar starts BELOW header line!
+      // CRITICAL: Sidebar starts BELOW header line with matching 18pt breathing space!
       sidebarY = y;
     }
     else if (isProfessional) {
@@ -366,24 +390,38 @@ export async function generateResumePDF(data, customization = {}) {
     }
     else if (isClassic) {
       if (pi.fullName) {
-        drawT(pi.fullName, { x: PAGE_WIDTH / 2, yPos: y, size: s(22), font: fontBold, color: darkCharcoal, align: "center" });
+        if (isSerif) {
+          drawT(pi.fullName.toUpperCase(), { x: PAGE_WIDTH / 2, yPos: y, size: s(21), font: fontBold, color: darkCharcoal, align: "center", spacing: 0.8 });
+        } else if (isMono) {
+          drawT(`> ${pi.fullName.toUpperCase()}`, { x: PAGE_WIDTH / 2, yPos: y, size: s(20), font: fontBold, color: darkCharcoal, align: "center" });
+        } else {
+          drawT(pi.fullName, { x: PAGE_WIDTH / 2, yPos: y, size: s(22), font: fontBold, color: darkCharcoal, align: "center" });
+        }
         y -= s(22) + g(6);
       }
       
-      const contactLine = [pi.email, pi.phone, pi.location].filter(Boolean).join("    |    ");
+      const contactDelimiter = isSerif ? "   ·   " : isMono ? "   |   " : "    |    ";
+      const contactLine = [pi.email, pi.phone, pi.location].filter(Boolean).join(contactDelimiter);
       if (contactLine) {
-        drawT(contactLine, { x: PAGE_WIDTH / 2, yPos: y, size: s(9), font: fontRegular, color: mediumColor, align: "center" });
+        const contactFont = isSerif ? fontItalic : fontRegular;
+        drawT(contactLine, { x: PAGE_WIDTH / 2, yPos: y, size: s(9), font: contactFont, color: mediumColor, align: "center" });
         y -= s(9) + g(4);
       }
 
-      const linkLine = [pi.linkedin, pi.portfolio].filter(Boolean).join("    |    ");
+      const linkLine = [pi.linkedin, pi.portfolio].filter(Boolean).join(contactDelimiter);
       if (linkLine) {
         drawT(linkLine, { x: PAGE_WIDTH / 2, yPos: y, size: s(9), font: fontRegular, color: accentColor, align: "center" });
         y -= s(9) + g(6);
       }
 
-      drawLine(marginX, y, PAGE_WIDTH - marginX, 2, accentColor);
-      y -= g(14);
+      if (isSerif) {
+        drawLine(marginX, y, PAGE_WIDTH - marginX, 1.5, accentColor);
+        drawLine(marginX, y - 2, PAGE_WIDTH - marginX, 0.5, accentColor);
+        y -= g(16);
+      } else {
+        drawLine(marginX, y, PAGE_WIDTH - marginX, 2, accentColor);
+        y -= g(14);
+      }
     } 
     else if (isMinimal) {
       if (pi.fullName) {
@@ -410,57 +448,74 @@ export async function generateResumePDF(data, customization = {}) {
     // ── Helper to draw elegant section headers ──
     const drawSectionTitle = (title, cursorY, xPos, width, inSidebar = false) => {
       let currentY = cursorY;
+      const tracking = headerTracking || 0.4;
       
       if (isModern) {
         if (inSidebar) {
-          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(8.5), font: fontBold, color: whiteColor, skipSanitize: true });
+          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(8.5), font: fontBold, color: whiteColor, skipSanitize: true, spacing: tracking });
           currentY -= s(6);
           if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 0.75, color: whiteColor, opacity: 0.25 });
           return currentY - s(10);
         } else {
-          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(10), font: fontBold, color: accentColor });
+          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(10), font: fontBold, color: accentColor, spacing: tracking });
           currentY -= s(6);
           if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 1.5, color: veryLightGray });
           return currentY - s(12);
         }
       } 
       else if (isExecutive) {
-        drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(11), font: fontBold, color: accentColor });
+        drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(11), font: fontBold, color: accentColor, spacing: tracking });
         currentY -= s(6);
         if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 2, color: accentColor });
         return currentY - s(12);
       }
       else if (isCompact) {
+        const titleText = isMono ? `// ${title.toUpperCase()}` : title.toUpperCase();
+        const titleTrack = isSerif ? 0.8 : tracking;
+        const lineThickness = isSerif ? 0.75 : 1;
+        const lineColor = isSerif ? accentColor : lightGray;
         if (inSidebar) {
-          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(8.5), font: fontBold, color: accentColor });
-          currentY -= s(4.5);
-          if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 1, color: veryLightGray });
-          return currentY - s(8);
+          drawT(titleText, { x: xPos, yPos: currentY, size: s(9), font: fontBold, color: accentColor, spacing: titleTrack });
+          currentY -= s(6);
+          if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: lineThickness, color: lineColor });
+          return currentY - s(11);
         } else {
-          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(9.5), font: fontBold, color: accentColor });
-          currentY -= s(5);
-          if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 1, color: veryLightGray });
-          return currentY - s(9);
+          drawT(titleText, { x: xPos, yPos: currentY, size: s(10.5), font: fontBold, color: accentColor, spacing: titleTrack });
+          currentY -= s(6);
+          if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: lineThickness, color: lineColor });
+          return currentY - s(12);
         }
       }
       else if (isProfessional) {
         const titleH = s(10);
         if (page) page.drawRectangle({ x: xPos, y: currentY - s(2), width: 3, height: titleH + s(2), color: accentColor });
-        drawT(title.toUpperCase(), { x: xPos + 10, yPos: currentY, size: s(10), font: fontBold, color: darkCharcoal });
+        drawT(title.toUpperCase(), { x: xPos + 10, yPos: currentY, size: s(10), font: fontBold, color: darkCharcoal, spacing: tracking });
         currentY -= s(6);
         return currentY - s(12);
       }
       else if (isClassic) {
-        const titleH = s(10.5);
-        if (page) page.drawRectangle({ x: xPos, y: currentY - s(2), width: 3.5, height: titleH + s(2), color: accentColor });
-        drawT(title.toUpperCase(), { x: xPos + 8, yPos: currentY, size: s(10.5), font: fontBold, color: accentColor });
-        currentY -= s(6);
-        if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 1, color: veryLightGray });
-        return currentY - s(12);
+        if (isSerif) {
+          drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(10.5), font: fontBold, color: accentColor, spacing: 0.8 });
+          currentY -= s(5);
+          if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 0.75, color: accentColor });
+          return currentY - s(12);
+        } else if (isMono) {
+          drawT(`// ${title.toUpperCase()}`, { x: xPos, yPos: currentY, size: s(10), font: fontBold, color: accentColor });
+          currentY -= s(5);
+          if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 0.5, color: accentColor, opacity: 0.5 });
+          return currentY - s(12);
+        } else {
+          const titleH = s(10.5);
+          if (page) page.drawRectangle({ x: xPos, y: currentY - s(2), width: 3.5, height: titleH + s(2), color: accentColor });
+          drawT(title.toUpperCase(), { x: xPos + 8, yPos: currentY, size: s(10.5), font: fontBold, color: accentColor, spacing: tracking });
+          currentY -= s(6);
+          if (page) page.drawLine({ start: { x: xPos, y: currentY }, end: { x: xPos + width, y: currentY }, thickness: 1, color: veryLightGray });
+          return currentY - s(12);
+        }
       } 
       else if (isMinimal) {
         if (page) page.drawLine({ start: { x: xPos, y: currentY + s(10) }, end: { x: xPos + width, y: currentY + s(10) }, thickness: 0.75, color: lightGray });
-        drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(9.5), font: fontBold, color: grayColor });
+        drawT(title.toUpperCase(), { x: xPos, yPos: currentY, size: s(9.5), font: fontBold, color: grayColor, spacing: tracking });
         currentY -= s(6);
         return currentY - s(12);
       }
@@ -551,13 +606,10 @@ export async function generateResumePDF(data, customization = {}) {
 
     // COMPACT RIGHT SIDEBAR SECTIONS
     if (isCompact) {
-      // Vertical divider line
-      if (page) page.drawLine({ start: { x: dividerX, y: sidebarY + s(4) }, end: { x: dividerX, y: marginBottom }, thickness: 0.75, color: lightGray });
-
       // 1. Technical Skills (plain comma-separated for max ATS compatibility)
       if (skills.length > 0) {
         sidebarY = drawSectionTitle("Technical Skills", sidebarY, sideX, sideContentW, true);
-        const skillText = skills.join(", ");
+        const skillText = isSerif ? skills.join("   ·   ") : isMono ? skills.map((s) => `[${s}]`).join("  ") : skills.join(", ");
         const consumedSkills = drawWrapped(skillText, {
           x: sideX, yPos: sidebarY, w: sideContentW, font: fontRegular, size: s(7.5), color: darkCharcoal, lineHeight: 1.40
         });
@@ -634,7 +686,11 @@ export async function generateResumePDF(data, customization = {}) {
 
         const bullets = (exp.bullets || []).filter((b) => b && typeof b === "string" && b.trim());
         for (const bullet of bullets) {
-          if (page) page.drawCircle({ x: mainX + 4, y: y + s(2.5), size: 1.5, color: grayColor });
+          if (isMono) {
+            drawT(">", { x: mainX + 2, yPos: y, size: s(8), font: fontBold, color: accentColor });
+          } else {
+            if (page) page.drawCircle({ x: mainX + 4, y: y + s(2.5), size: 1.5, color: grayColor });
+          }
           const consumedBullet = drawWrapped(bullet, {
             x: mainX + 11, yPos: y, w: mainW - 11, font: fontRegular, size: s(8), color: darkCharcoal, lineHeight: 1.40
           });
@@ -673,28 +729,40 @@ export async function generateResumePDF(data, customization = {}) {
       const skillsTitle = isExecutive ? "Core Competencies" : "Technical Skills";
       y = drawSectionTitle(skillsTitle, y, mainX, mainW);
       if (isClassic || isExecutive) {
-        // Pill-style tags
-        const tagFontSize = s(8);
-        const tagPadX = 8;
-        const tagPadY = s(2.5);
-        const tagGapX = 5;
-        const tagGapY = s(5);
-        const tagH = tagFontSize + tagPadY * 2;
-        let tagX = mainX;
-        let tagRowY = y;
+        if (isSerif) {
+          // Elegant Typographic Dot List for Serif
+          const skillText = skills.join("   ·   ");
+          const consumed = drawWrapped(skillText, { x: mainX, yPos: y, w: mainW, font: fontRegular, size: s(9), color: darkCharcoal, lineHeight: 1.5 });
+          y -= consumed + s(14);
+        } else if (isMono) {
+          // Terminal code brackets for Monospace
+          const bracketText = skills.map((s) => `[ ${s} ]`).join("  ");
+          const consumed = drawWrapped(bracketText, { x: mainX, yPos: y, w: mainW, font: fontBold, size: s(8.5), color: darkCharcoal, lineHeight: 1.45 });
+          y -= consumed + s(14);
+        } else {
+          // Pill-style tags
+          const tagFontSize = s(8);
+          const tagPadX = 8;
+          const tagPadY = s(2.5);
+          const tagGapX = 5;
+          const tagGapY = s(5);
+          const tagH = tagFontSize + tagPadY * 2;
+          let tagX = mainX;
+          let tagRowY = y;
 
-        for (const skill of skills) {
-          const textW = fontBold.widthOfTextAtSize(sanitize(skill), tagFontSize);
-          const totalW = textW + tagPadX * 2;
-          if (tagX + totalW > mainX + mainW) {
-            tagX = mainX;
-            tagRowY -= tagH + tagGapY;
+          for (const skill of skills) {
+            const textW = fontBold.widthOfTextAtSize(sanitize(skill), tagFontSize);
+            const totalW = textW + tagPadX * 2;
+            if (tagX + totalW > mainX + mainW) {
+              tagX = mainX;
+              tagRowY -= tagH + tagGapY;
+            }
+            drawPill(tagX, tagRowY - tagH, totalW, tagH, accentColor, 0.09, accentColor, 0.28);
+            drawT(skill, { x: tagX + tagPadX, yPos: tagRowY - tagH + (tagH - tagFontSize) / 2 + s(0.8), size: tagFontSize, font: fontBold, color: darkCharcoal });
+            tagX += totalW + tagGapX;
           }
-          drawPill(tagX, tagRowY - tagH, totalW, tagH, accentColor, 0.09, accentColor, 0.28);
-          drawT(skill, { x: tagX + tagPadX, yPos: tagRowY - tagH + (tagH - tagFontSize) / 2 + s(0.8), size: tagFontSize, font: fontBold, color: darkCharcoal });
-          tagX += totalW + tagGapX;
+          y = tagRowY - tagH - s(16);
         }
-        y = tagRowY - tagH - s(16);
       } else if (isProfessional) {
         // Two-column grid with left accent bars
         const colW = (mainW - 20) / 2;
@@ -769,6 +837,17 @@ export async function generateResumePDF(data, customization = {}) {
       y -= consumedLang + s(10);
     }
 
+    // Draw vertical divider for Compact template (stops cleanly where content ends)
+    if (isCompact && page && compactHeaderBorderY > 0) {
+      const dividerEndY = Math.min(y, sidebarY) - s(4);
+      page.drawLine({
+        start: { x: dividerX, y: compactHeaderBorderY - s(2) },
+        end: { x: dividerX, y: Math.max(dividerEndY, marginBottom) },
+        thickness: 0.75,
+        color: lightGray,
+      });
+    }
+
     const lowestY = hasSidebar ? Math.min(y, sidebarY) : y;
     return PAGE_HEIGHT - lowestY + marginBottom;
   };
@@ -810,7 +889,7 @@ export async function generateCoverLetterPDF(data, custom = {}) {
   pdfDoc.registerFontkit(fontkit);
 
   const customFont = custom?.fontFamily || "";
-  const { fontRegular, fontBold } = await loadFontFamily(pdfDoc, customFont);
+  let { fontRegular, fontBold } = await loadFontFamily(pdfDoc, customFont);
 
   const accentClr = hexToRgb(custom?.accentColor || "#4f46e5");
   const textClr = rgb(0.12, 0.16, 0.22); // Dark slate charcoal
