@@ -12,6 +12,9 @@ const CompactTemplate = ({ data, customization }) => {
   const fontSize = customization?.fontSize || "default";
   const sizeScale = fontSize === "small" ? 0.88 : fontSize === "large" ? 1.25 : 1.05;
 
+  const isSerif = (fontFamily || "").toLowerCase().includes("serif") && !(fontFamily || "").toLowerCase().includes("sans-serif");
+  const isMono = (fontFamily || "").toLowerCase().includes("mono");
+
   const {
     personalInfo = {},
     summary = "",
@@ -33,18 +36,18 @@ const CompactTemplate = ({ data, customization }) => {
   const SectionTitle = ({ children }) => (
     <h2
       style={{
-        fontSize: 11 * sizeScale,
+        fontSize: (isSerif ? 11.5 : 11) * sizeScale,
         fontWeight: 800,
         textTransform: "uppercase",
-        letterSpacing: "0.1em",
+        letterSpacing: isSerif ? "0.08em" : isMono ? "0.04em" : "0.1em",
         color: accent,
         margin: `0 0 ${8 * sizeScale}px 0`,
         paddingBottom: 5,
-        borderBottom: `1.5px solid ${accent}30`,
+        borderBottom: isSerif ? `1.5px solid ${accent}` : `1.5px solid ${accent}30`,
         fontFamily,
       }}
     >
-      {children}
+      {isMono ? `// ${typeof children === "string" ? children.toUpperCase() : children}` : children}
     </h2>
   );
 
@@ -52,18 +55,18 @@ const CompactTemplate = ({ data, customization }) => {
   const SideTitle = ({ children }) => (
     <h2
       style={{
-        fontSize: 10 * sizeScale,
+        fontSize: (isSerif ? 10.5 : 10) * sizeScale,
         fontWeight: 800,
         textTransform: "uppercase",
-        letterSpacing: "0.12em",
+        letterSpacing: isSerif ? "0.08em" : isMono ? "0.04em" : "0.12em",
         color: accent,
         margin: `0 0 ${7 * sizeScale}px 0`,
         paddingBottom: 4,
-        borderBottom: `1.5px solid ${accent}25`,
+        borderBottom: isSerif ? `1.5px solid ${accent}` : `1.5px solid ${accent}25`,
         fontFamily,
       }}
     >
-      {children}
+      {isMono ? `// ${typeof children === "string" ? children.toUpperCase() : children}` : children}
     </h2>
   );
 
@@ -87,23 +90,24 @@ const CompactTemplate = ({ data, customization }) => {
       }}
     >
       {/* ── Header ── */}
-      <div style={{ padding: "28px 32px 18px", borderBottom: `2.5px solid ${accent}` }}>
+      <div style={{ padding: "28px 32px 18px", borderBottom: isSerif ? `3px double ${accent}` : `2.5px solid ${accent}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap" }}>
           <div>
             <h1
               style={{
-                fontSize: 24 * sizeScale,
+                fontSize: (isSerif ? 22 : 24) * sizeScale,
                 fontWeight: 900,
+                textTransform: isSerif || isMono ? "uppercase" : "none",
                 color: "#111827",
                 margin: 0,
-                letterSpacing: "-0.01em",
+                letterSpacing: isSerif ? "0.06em" : "-0.01em",
                 fontFamily,
               }}
             >
-              {personalInfo.fullName || "Your Name"}
+              {isMono ? `> ${personalInfo.fullName || "Your Name"}` : personalInfo.fullName || "Your Name"}
             </h1>
           </div>
-          <div style={{ textAlign: "right", fontSize: 9.5 * sizeScale, color: "#6b7280", fontFamily, lineHeight: 1.6 }}>
+          <div style={{ textAlign: "right", fontSize: 9.5 * sizeScale, color: "#6b7280", fontFamily, fontStyle: isSerif ? "italic" : "normal", lineHeight: 1.6 }}>
             {personalInfo.email && <div>{personalInfo.email}</div>}
             {personalInfo.phone && <div>{personalInfo.phone}</div>}
             {personalInfo.location && <div>{personalInfo.location}</div>}
@@ -213,9 +217,23 @@ const CompactTemplate = ({ data, customization }) => {
           {normalizedSkills.length > 0 && (
             <div>
               <SideTitle>Technical Skills</SideTitle>
-              <p style={{ fontSize: 9 * sizeScale, color: "#374151", lineHeight: 1.65, fontFamily, margin: 0 }}>
-                {normalizedSkills.join(", ")}
-              </p>
+              {isSerif ? (
+                <p style={{ fontSize: 9 * sizeScale, color: "#374151", lineHeight: 1.65, fontFamily, margin: 0 }}>
+                  {normalizedSkills.join("   ·   ")}
+                </p>
+              ) : isMono ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 6px" }}>
+                  {normalizedSkills.map((skill, i) => (
+                    <span key={i} style={{ fontSize: 8.5 * sizeScale, fontWeight: 600, color: accent, fontFamily }}>
+                      {`[${skill}]`}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: 9 * sizeScale, color: "#374151", lineHeight: 1.65, fontFamily, margin: 0 }}>
+                  {normalizedSkills.join(", ")}
+                </p>
+              )}
             </div>
           )}
 
